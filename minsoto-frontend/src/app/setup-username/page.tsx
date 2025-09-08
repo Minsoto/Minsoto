@@ -1,5 +1,7 @@
 'use client';
+
 import type { AxiosError } from 'axios';
+import axios from 'axios';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
@@ -30,7 +32,6 @@ export default function SetupUsernamePage() {
       router.push('/login');
       return;
     }
-
     if (user?.is_setup_complete) {
       router.push('/coming-soon');
       return;
@@ -41,7 +42,6 @@ export default function SetupUsernamePage() {
     const interval = setInterval(() => {
       setCurrentKanji((prev) => (prev + 1) % kanjiElements.length);
     }, 3500);
-
     return () => clearInterval(interval);
   }, [kanjiElements.length]);
 
@@ -55,7 +55,6 @@ export default function SetupUsernamePage() {
         });
       }
     };
-
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
@@ -76,23 +75,22 @@ export default function SetupUsernamePage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-  }
-  
-try {
-  const response = await api.post('/auth/setup-username/', { username });
-  updateUser(response.data.user);
-  // The useEffect will handle the redirect
-} catch (error: unknown) {
-  if (axios.isAxiosError(error)) {
-    const errorMessage = error.response?.data?.username?.[0] || 'Failed to set username';
-    setError(errorMessage);
-  } else {
-    setError('An unexpected error occurred');
-  }
-} finally {
-  setLoading(false);
-}
 
+    try {
+      const response = await api.post('/auth/setup-username/', { username });
+      updateUser(response.data.user);
+      // The useEffect will handle the redirect
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        const errorMessage = error.response?.data?.username?.[0] || 'Failed to set username';
+        setError(errorMessage);
+      } else {
+        setError('An unexpected error occurred');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };  // <-- Closing brace was missing here
 
   return (
     <div ref={containerRef} className="relative min-h-screen bg-black text-white overflow-hidden">
@@ -128,13 +126,11 @@ try {
           </defs>
           <rect width="100%" height="100%" fill="url(#setupGrid)" />
         </svg>
-
         {/* Floating Elements */}
         <div className="absolute top-1/3 right-1/4 w-1 h-1 bg-white opacity-20 animate-pulse" />
         <div className="absolute bottom-1/4 left-1/5 w-1 h-1 bg-white opacity-30 animate-pulse" style={{ animationDelay: '1s' }} />
         <div className="absolute top-2/3 right-1/3 w-1 h-1 bg-white opacity-25 animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
-
       {/* Main Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4">
         <div className="max-w-lg w-full space-y-12">
@@ -168,7 +164,6 @@ try {
               </p>
             </div>
           </div>
-
           {/* Setup Form Section */}
           <div className="relative">
             <div className="border border-white p-8 md:p-10">
@@ -212,7 +207,6 @@ try {
                     </div>
                   </div>
                 </div>
-
                 {/* Submit Button */}
                 <div className="pt-8">
                   <button
@@ -233,7 +227,6 @@ try {
                     )}
                   </button>
                 </div>
-
                 {/* Zen Quote */}
                 <div className="text-center pt-6 space-y-2 border-t border-white border-opacity-10">
                   <p className="text-lg font-thin">自分</p>
@@ -248,7 +241,6 @@ try {
               <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-white" />
             </div>
           </div>
-
           {/* Footer Philosophy */}
           <div className="text-center space-y-2 pt-4">
             <div className="flex items-center justify-center gap-4">
@@ -260,7 +252,6 @@ try {
           </div>
         </div>
       </div>
-
       <style jsx>{`
         @keyframes float {
           0%, 100% {
@@ -270,7 +261,6 @@ try {
             transform: translateY(-10px);
           }
         }
-
         .animate-float {
           animation: float 6s ease-in-out infinite;
         }
