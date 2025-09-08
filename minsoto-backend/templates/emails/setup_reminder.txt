@@ -1,0 +1,14 @@
+Hi {{ user.first_name }}!
+
+We noticed you haven't completed setting up your Minsoto profile yet. You're just one step away from joining our amazing community!
+
+To complete your registration, please choose a username for your profile:
+
+{{ setup_url }}
+
+Don't worry, it only takes a few seconds, and then you'll have full access to all of Minsoto's features.
+
+Need help? Just reply to this email and we'll be happy to assist you.
+
+Best regards,
+The Minsoto Team
