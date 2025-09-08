@@ -13,7 +13,7 @@ export default function LoginPage() {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Japanese elements for rotation - focused on welcoming/beginning
+  // Japanese kanji elements for background animation
   const kanjiElements = [
     { char: '始', meaning: 'Beginning', reading: 'hajimari' },
     { char: '門', meaning: 'Gate', reading: 'mon' },
@@ -22,7 +22,7 @@ export default function LoginPage() {
     { char: '新', meaning: 'New', reading: 'atarashii' }
   ];
 
-  // Move redirect logic to useEffect to avoid rendering during render
+  // Redirect based on authentication inside useEffect (fix jitter/refresh)
   useEffect(() => {
     if (isAuthenticated) {
       if (user?.is_setup_complete) {
@@ -31,16 +31,18 @@ export default function LoginPage() {
         router.push('/setup-username');
       }
     }
+    // Dependencies forced to only run on auth or user change
   }, [isAuthenticated, user, router]);
 
+  // Cycle through kanji elements every 4 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentKanji((prev) => (prev + 1) % kanjiElements.length);
+      setCurrentKanji(prev => (prev + 1) % kanjiElements.length);
     }, 4000);
-
     return () => clearInterval(interval);
   }, [kanjiElements.length]);
 
+  // Track mouse position relative to container for background effects
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (containerRef.current) {
@@ -51,12 +53,11 @@ export default function LoginPage() {
         });
       }
     };
-
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Don't render anything if already authenticated (prevents flash)
+  // Show loading spinner if already authenticated to prevent UI flicker
   if (isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
@@ -68,19 +69,21 @@ export default function LoginPage() {
     );
   }
 
+  // Called when Google OAuth completes successfully
   const handleAuthSuccess = () => {
     setError('');
   };
 
+  // Called when auth fails, show error message
   const handleAuthError = (errorMessage: string) => {
     setError(errorMessage);
   };
 
   return (
     <div ref={containerRef} className="relative min-h-screen bg-black text-white overflow-hidden">
-      {/* Animated Background Effects */}
+      {/* Background Animated Effects */}
       <div className="fixed inset-0 pointer-events-none">
-        {/* Subtle moving gradient that follows mouse */}
+        {/* Radial gradient softly following mouse */}
         <div 
           className="absolute w-96 h-96 opacity-8 transition-all duration-1000 ease-out"
           style={{
@@ -90,13 +93,11 @@ export default function LoginPage() {
             transform: 'translate(-50%, -50%)'
           }}
         />
-        
-        {/* Animated Kanji Background */}
+        {/* Kanji Background */}
         <div className="absolute left-10 bottom-20 text-9xl font-thin opacity-8 transition-all duration-1000">
           {kanjiElements[currentKanji].char}
         </div>
-        
-        {/* Grid Pattern */}
+        {/* Faint grid */}
         <svg className="absolute inset-0 w-full h-full opacity-5">
           <defs>
             <pattern id="loginGrid" width="60" height="60" patternUnits="userSpaceOnUse">
@@ -105,20 +106,16 @@ export default function LoginPage() {
           </defs>
           <rect width="100%" height="100%" fill="url(#loginGrid)" />
         </svg>
-
-        {/* Floating Elements */}
+        {/* Floating dots */}
         <div className="absolute top-1/4 right-1/4 w-1 h-1 bg-white opacity-20 animate-pulse" />
         <div className="absolute bottom-1/3 left-1/5 w-1 h-1 bg-white opacity-30 animate-pulse" style={{ animationDelay: '1s' }} />
         <div className="absolute top-1/2 right-1/5 w-1 h-1 bg-white opacity-25 animate-pulse" style={{ animationDelay: '2s' }} />
       </div>
-
-      {/* Main Content */}
+      {/* Main Login Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4">
         <div className="max-w-lg w-full space-y-12">
-          
-          {/* Header Section */}
+          {/* Header */}
           <div className="text-center space-y-8">
-            {/* Animated Kanji Display */}
             <div className="relative inline-block">
               <div className="text-7xl font-thin transition-all duration-1000 transform hover:scale-110">
                 {kanjiElements[currentKanji].char}
@@ -127,31 +124,25 @@ export default function LoginPage() {
                 {kanjiElements[currentKanji].reading} · {kanjiElements[currentKanji].meaning}
               </div>
             </div>
-            
-            {/* Welcome Text */}
             <div className="space-y-4">
               <div className="flex items-center justify-center gap-4">
                 <div className="h-px bg-white w-12 opacity-20" />
                 <span className="text-2xl font-light tracking-widest">MINSOTO</span>
                 <div className="h-px bg-white w-12 opacity-20" />
               </div>
-              
               <h1 className="text-3xl md:text-4xl font-thin tracking-wide">
                 Welcome Back
               </h1>
-              
               <p className="text-sm font-light opacity-60 max-w-md mx-auto leading-relaxed">
                 Enter the space of mindful connection and purposeful growth
               </p>
             </div>
           </div>
-
-          {/* Login Section */}
+          {/* Login Box */}
           <div className="relative">
             <div className="border border-white p-8 md:p-10">
               <div className="space-y-8">
-                
-                {/* Error Display */}
+                {/* Error Message */}
                 {error && (
                   <div className="border border-red-400 bg-red-900 bg-opacity-20 text-red-300 px-4 py-3 text-sm">
                     <div className="flex items-center gap-2">
@@ -160,8 +151,7 @@ export default function LoginPage() {
                     </div>
                   </div>
                 )}
-                
-                {/* Auth Section */}
+                {/* Google Sign In */}
                 <div className="text-center space-y-6">
                   <div className="space-y-3">
                     <p className="text-sm font-light tracking-wide opacity-70">
@@ -169,8 +159,6 @@ export default function LoginPage() {
                     </p>
                     <div className="h-px bg-white opacity-10 w-full" />
                   </div>
-                  
-                  {/* Google Auth Button Container */}
                   <div className="flex justify-center pt-4">
                     <GoogleAuthButton 
                       onSuccess={handleAuthSuccess}
@@ -178,22 +166,19 @@ export default function LoginPage() {
                     />
                   </div>
                 </div>
-
                 {/* Zen Quote */}
                 <div className="text-center pt-6 space-y-2 border-t border-white border-opacity-10">
                   <p className="text-lg font-thin">正念</p>
                   <p className="text-xs opacity-40">Mindfulness in each moment</p>
                 </div>
               </div>
-              
-              {/* Decorative corners */}
+              {/* Decorative Corners */}
               <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-white" />
               <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-white" />
               <div className="absolute bottom-0 left-0 w-6 h-6 border-b-2 border-l-2 border-white" />
               <div className="absolute bottom-0 right-0 w-6 h-6 border-b-2 border-r-2 border-white" />
             </div>
           </div>
-
           {/* Footer Philosophy */}
           <div className="text-center space-y-2 pt-4">
             <div className="flex items-center justify-center gap-4">
@@ -205,7 +190,7 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-
+      {/* Add floating animation keyframes */}
       <style jsx>{`
         @keyframes float {
           0%, 100% {
@@ -215,10 +200,9 @@ export default function LoginPage() {
             transform: translateY(-10px);
           }
         }
-
         .animate-float {
           animation: float 6s ease-in-out infinite;
-        }
+        }          
       `}</style>
     </div>
   );
