@@ -51,7 +51,7 @@ ROOT_URLCONF = 'minsoto_backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [BASE_DIR / 'templates'],  # Add this for email templates
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -95,6 +95,8 @@ CORS_ALLOWED_ORIGINS = [
     config('FRONTEND_URL', default='http://localhost:3000'),
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "https://minsoto.vercel.app",
+    "https://www.minsoto.vercel.app",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -118,14 +120,15 @@ AUTH_USER_MODEL = 'users.CustomUser'
 GOOGLE_CLIENT_ID = config('GOOGLE_CLIENT_ID')
 GOOGLE_CLIENT_SECRET = config('GOOGLE_CLIENT_SECRET')
 
-# Email Configuration
+# Email Configuration (Titan Mail)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default = '')
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default = '')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=config('EMAIL_HOST_USER'), default = 'noreply@minsoto.com')
+EMAIL_HOST = config('EMAIL_HOST', default='smtp.titan.email')
+EMAIL_PORT = config('EMAIL_PORT', default=465, cast=int)
+EMAIL_USE_SSL = config('EMAIL_USE_SSL', default=True, cast=bool)
+EMAIL_USE_TLS = config('EMAIL_USE_TLS', default=False, cast=bool)
+EMAIL_HOST_USER = config('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER)
 
 # For development or if email isn't configured, use console backend
 if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
@@ -172,3 +175,8 @@ LOGGING = {
         },
     },
 }
+
+# Security settings
+if not DEBUG:
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True

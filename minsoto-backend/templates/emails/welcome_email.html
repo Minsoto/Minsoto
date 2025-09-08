@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to Minsoto</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: #4f46e5;
+            margin-bottom: 10px;
+        }
+        .welcome-title {
+            color: #1f2937;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #6b7280;
+            font-size: 16px;
+        }
+        .content {
+            margin: 30px 0;
+        }
+        .features {
+            background: #f8fafc;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 25px 0;
+        }
+        .feature-item {
+            margin: 15px 0;
+            display: flex;
+            align-items: flex-start;
+        }
+        .feature-icon {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        .cta-button {
+            display: inline-block;
+            background: #4f46e5;
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 25px 0;
+        }
+        .footer {
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">Minsoto</div>
+            <h1 class="welcome-title">Welcome, {{ user.first_name }}!</h1>
+            <p class="subtitle">Your Social Network for Growth</p>
+        </div>
+
+        <div class="content">
+            <p>We're thrilled to have you join our community of focused, growth-minded individuals. Minsoto is designed to help you connect with like-minded people, track your progress, and achieve your goals through meaningful connections.</p>
+
+            <div class="features">
+                <h3 style="color: #1f2937; margin-bottom: 20px;">Here's what you can look forward to:</h3>
+                
+                <div class="feature-item">
+                    <span class="feature-icon">✨</span>
+                    <div>
+                        <strong>Personal Connections & Friend System</strong><br>
+                        Connect with people who share your interests
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <span class="feature-icon">🌍</span>
+                    <div>
+                        <strong>Curated Content Feeds</strong><br>
+                        See content that matters to you
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <span class="feature-icon">🎨</span>
+                    <div>
+                        <strong>Customizable Profile</strong><br>
+                        Make your profile uniquely yours with dynamic widgets
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <span class="feature-icon">👥</span>
+                    <div>
+                        <strong>Collaboration Circles</strong><br>
+                        Work together on projects and build habits with accountability partners
+                    </div>
+                </div>
+
+                <div class="feature-item">
+                    <span class="feature-icon">🔧</span>
+                    <div>
+                        <strong>Community Extensions</strong><br>
+                        Add custom features that fit your workflow
+                    </div>
+                </div>
+            </div>
+
+            <p>Your journey with Minsoto starts now. We can't wait to see what you'll achieve!</p>
+
+            <div style="text-align: center;">
+                <a href="{{ site_url }}" class="cta-button">Get Started with Minsoto</a>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p><strong>Best regards,</strong><br>The Minsoto Team</p>
+            <p style="margin-top: 20px;">
+                This email was sent to {{ user.email }}.<br>
+                If you didn't create an account with us, please ignore this email.
+            </p>
+        </div>
+    </div>
+</body>
+</html>
