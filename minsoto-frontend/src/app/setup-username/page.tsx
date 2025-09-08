@@ -1,5 +1,5 @@
 'use client';
-
+import type { AxiosError } from 'axios';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
@@ -77,17 +77,21 @@ export default function SetupUsernamePage() {
     setLoading(true);
     setError('');
 
-    try {
-      const response = await api.post('/auth/setup-username/', { username });
-      updateUser(response.data.user);
-      // The useEffect will handle the redirect
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.username?.[0] || 'Failed to set username';
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+try {
+  const response = await api.post('/auth/setup-username/', { username });
+  updateUser(response.data.user);
+  // The useEffect will handle the redirect
+} catch (error: unknown) {
+  if (axios.isAxiosError(error)) {
+    const errorMessage = error.response?.data?.username?.[0] || 'Failed to set username';
+    setError(errorMessage);
+  } else {
+    setError('An unexpected error occurred');
+  }
+} finally {
+  setLoading(false);
+}
+
 
   return (
     <div ref={containerRef} className="relative min-h-screen bg-black text-white overflow-hidden">
