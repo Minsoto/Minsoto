@@ -125,7 +125,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER', default = '')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default = '')
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=config('EMAIL_HOST_USER'), default = 'noreply@minsoto.com')
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default=config('EMAIL_HOST_USER'))
 
 # For development or if email isn't configured, use console backend
 if not EMAIL_HOST_USER or not EMAIL_HOST_PASSWORD:
