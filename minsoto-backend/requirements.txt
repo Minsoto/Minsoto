@@ -1,0 +1,11 @@
+django
+djangorestframework
+python-decouple
+psycopg2-binary
+django-cors-headers
+djangorestframework-simplejwt
+python-dotenv
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+dj-database-url
