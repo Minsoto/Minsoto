@@ -76,7 +76,8 @@ export default function SetupUsernamePage() {
     e.preventDefault();
     setLoading(true);
     setError('');
-
+  }
+  
 try {
   const response = await api.post('/auth/setup-username/', { username });
   updateUser(response.data.user);
