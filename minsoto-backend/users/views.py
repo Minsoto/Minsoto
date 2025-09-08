@@ -15,7 +15,6 @@ from .serializers import (
     ProfileSerializer,
     UsernameSetupSerializer
 )
-from .email_utils import send_welcome_email, send_username_setup_reminder
 
 User = get_user_model()
 
@@ -31,7 +30,7 @@ def get_tokens_for_user(user):
 def google_auth(request):
     serializer = GoogleAuthSerializer(data=request.data)
     if serializer.is_valid():
-        credential = serializer.validated_data['access_token']
+        credential = serializer.validated_data['access_token']  # This is actually the JWT credential
         
         try:
             # Verify the JWT credential with Google
@@ -47,8 +46,6 @@ def google_auth(request):
             first_name = idinfo.get('given_name', '')
             last_name = idinfo.get('family_name', '')
             picture = idinfo.get('picture', '')
-            
-            user_created = False
             
             try:
                 # Try to find existing user
@@ -75,23 +72,17 @@ def google_auth(request):
                     user=user,
                     profile_picture_url=picture
                 )
-                
-                user_created = True
-            
-            # Send welcome email for new users
-            if user_created:
-                send_welcome_email(user)
             
             tokens = get_tokens_for_user(user)
             user_data = UserSerializer(user).data
             
             return Response({
                 'tokens': tokens,
-                'user': user_data,
-                'is_new_user': user_created
+                'user': user_data
             })
             
         except ValueError as e:
+            # Invalid token
             return Response(
                 {'error': f'Invalid Google token: {str(e)}'}, 
                 status=status.HTTP_400_BAD_REQUEST
@@ -120,8 +111,7 @@ def setup_username(request):
         request.user.save()
         
         return Response({
-            'user': UserSerializer(request.user).data,
-            'message': 'Username setup completed successfully!'
+            'user': UserSerializer(request.user).data
         })
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -150,20 +140,3 @@ def profile_me(request):
 def user_me(request):
     serializer = UserSerializer(request.user)
     return Response(serializer.data)
-
-# Optional: Manual email sending endpoint for testing
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def send_test_email(request):
-    """
-    Test endpoint to manually send welcome email
-    """
-    success = send_welcome_email(request.user)
-    
-    if success:
-        return Response({'message': 'Test email sent successfully!'})
-    else:
-        return Response(
-            {'error': 'Failed to send test email'}, 
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
