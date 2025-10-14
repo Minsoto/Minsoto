@@ -8,12 +8,16 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from django.conf import settings
-from .models import Profile
+from .models import Profile, HabitStreak, Task, UserInterest
 from .serializers import (
     GoogleAuthSerializer, 
     UserSerializer, 
     ProfileSerializer,
-    UsernameSetupSerializer
+    UsernameSetupSerializer,
+    HabitStreakSerializer,
+    TaskSerializer,
+    UserInterestSerializer,
+    ProfileDetailSerializer
 )
 
 User = get_user_model()
@@ -140,3 +144,62 @@ def profile_me(request):
 def user_me(request):
     serializer = UserSerializer(request.user)
     return Response(serializer.data)
+
+
+# users/views.py additions
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def profile_detail(request, username):
+    """Get profile with visibility logic"""
+    try:
+        user = User.objects.get(username=username)
+        profile = user.profile
+        
+        is_owner = request.user == user
+        
+        # Filter widgets based on visibility
+        if not is_owner and profile.layout:
+            visible_widgets = [
+                w for w in profile.layout.get('widgets', [])
+                if w.get('visibility') == 'public'
+            ]
+            profile.layout['widgets'] = visible_widgets
+        
+        serializer = ProfileDetailSerializer(profile)
+        return Response({
+            'profile': serializer.data,
+            'is_owner': is_owner
+        })
+        
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=404)
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_profile_layout(request):
+    """Save widget layout"""
+    profile = request.user.profile
+    layout_data = request.data.get('layout')
+    
+    if layout_data:
+        profile.layout = layout_data
+        profile.save()
+        return Response({'message': 'Layout saved successfully'})
+    
+    return Response({'error': 'Invalid layout data'}, status=400)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def widget_data(request):
+    """Get all widget data for current user"""
+    user = request.user
+    
+    data = {
+        'habits': HabitStreakSerializer(user.habits.all(), many=True).data,
+        'tasks': TaskSerializer(user.tasks.all(), many=True).data,
+        'interests': UserInterestSerializer(user.interests.all(), many=True).data,
+        # Add more widget data as needed
+    }
+    
+    return Response(data)
