@@ -45,7 +45,7 @@ interface Profile {
   theme: string;
   layout: {
     widgets: Widget[];
-  };
+  } | null;
   interests: Interest[];
   stats: Stats;
 }
@@ -125,7 +125,7 @@ export default function ProfilePage() {
     fetchWidgetData();
   }, [username, isAuthenticated, router, fetchProfile, fetchWidgetData]);
 
-  const handleLayoutChange = async (updatedWidgets: Widget[]) => {
+  const handleLayoutChange = useCallback(async (updatedWidgets: Widget[]) => {
     if (!profileData?.is_owner) return;
 
     const newLayout = {
@@ -145,31 +145,33 @@ export default function ProfilePage() {
     } catch (error) {
       console.error('Failed to save layout:', error);
     }
-  };
+  }, [profileData?.is_owner]);
 
-  const handleWidgetVisibilityToggle = async (widgetId: string) => {
+  const handleWidgetVisibilityToggle = useCallback(async (widgetId: string) => {
     if (!profileData?.is_owner) return;
 
-    const updatedWidgets = profileData.profile.layout.widgets.map(widget =>
+    const currentWidgets = profileData.profile.layout?.widgets || [];
+    const updatedWidgets = currentWidgets.map(widget =>
       widget.id === widgetId
         ? { ...widget, visibility: widget.visibility === 'public' ? 'private' as const : 'public' as const }
         : widget
     );
 
     handleLayoutChange(updatedWidgets);
-  };
+  }, [profileData, handleLayoutChange]);
 
-  const handleWidgetDelete = async (widgetId: string) => {
+  const handleWidgetDelete = useCallback(async (widgetId: string) => {
     if (!profileData?.is_owner) return;
 
-    const updatedWidgets = profileData.profile.layout.widgets.filter(
+    const currentWidgets = profileData.profile.layout?.widgets || [];
+    const updatedWidgets = currentWidgets.filter(
       widget => widget.id !== widgetId
     );
 
     handleLayoutChange(updatedWidgets);
-  };
+  }, [profileData, handleLayoutChange]);
 
-  const handleAddWidget = (template: WidgetTemplate) => {
+  const handleAddWidget = useCallback((template: WidgetTemplate) => {
     if (!profileData?.is_owner) return;
 
     const newWidget: Widget = {
@@ -181,9 +183,11 @@ export default function ProfilePage() {
       config: {}
     };
 
-    const updatedWidgets = [...profileData.profile.layout.widgets, newWidget];
+    const currentWidgets = profileData.profile.layout?.widgets || [];
+    const updatedWidgets = [...currentWidgets, newWidget];
+    
     handleLayoutChange(updatedWidgets);
-  };
+  }, [profileData, handleLayoutChange]);
 
   const toggleEditMode = () => {
     setIsEditMode(!isEditMode);
@@ -199,7 +203,7 @@ export default function ProfilePage() {
 
   if (!profileData) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center text-white">
         <div className="text-center">
           <div className="text-6xl font-thin opacity-20 mb-4">404</div>
           <p className="text-sm opacity-50">Profile not found</p>
@@ -257,11 +261,11 @@ export default function ProfilePage() {
 
         {/* Floating Actions */}
         {is_owner && (
-          <div className="fixed bottom-8 right-8 flex flex-col gap-3">
+          <div className="fixed bottom-8 right-8 flex flex-col gap-3 z-50">
             {/* Add Widget */}
             <button
               onClick={() => setIsWidgetLibraryOpen(true)}
-              className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform"
+              className="w-12 h-12 rounded-full bg-white text-black flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
               title="Add Widget"
             >
               <Plus size={24} />
@@ -270,7 +274,7 @@ export default function ProfilePage() {
             {/* Edit Mode Toggle */}
             <button
               onClick={toggleEditMode}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
                 isEditMode 
                   ? 'bg-green-500 text-black' 
                   : 'bg-black border border-white text-white'
@@ -282,7 +286,7 @@ export default function ProfilePage() {
 
             {/* Grid View */}
             <button
-              className="w-12 h-12 rounded-full bg-black border border-white flex items-center justify-center hover:bg-white hover:bg-opacity-10 transition-colors"
+              className="w-12 h-12 rounded-full bg-black border border-white flex items-center justify-center hover:bg-white hover:bg-opacity-10 transition-colors shadow-lg"
               title="Grid View"
             >
               <Grid3x3 size={20} />
@@ -290,7 +294,7 @@ export default function ProfilePage() {
 
             {/* Theme Customization */}
             <button
-              className="w-12 h-12 rounded-full bg-black border border-white flex items-center justify-center hover:bg-white hover:bg-opacity-10 transition-colors"
+              className="w-12 h-12 rounded-full bg-black border border-white flex items-center justify-center hover:bg-white hover:bg-opacity-10 transition-colors shadow-lg"
               title="Theme Customization"
             >
               <Palette size={20} />
