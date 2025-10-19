@@ -5,10 +5,10 @@ import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 
-import TasksWidget from '../widgets/TasksWidget';
-import HabitStreakWidget from '../widgets/HabitStreakWidget';
-import HabitGraphWidget from '../widgets/HabitGraphWidget';
-import InterestsWidget from '../widgets/InterestsWidget';
+import TasksWidget from '../../components/widgets/TasksWidget';
+import HabitStreakWidget from '../../components/widgets/HabitStreakWidget';
+import HabitGraphWidget from '../../components/widgets/HabitGraphWidget';
+import InterestsWidget from '../../components/widgets/InterestsWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 

@@ -14,6 +14,7 @@ urlpatterns = [
     # User
     path('user/me/', views.user_me, name='user_me'),
     
+    
     # Widgets data
     path('widgets/data/', views.widget_data, name='widget_data'),
     

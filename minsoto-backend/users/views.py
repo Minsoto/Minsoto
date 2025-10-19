@@ -120,15 +120,46 @@ def setup_username(request):
     
     serializer = UsernameSetupSerializer(data=request.data)
     if serializer.is_valid():
-        request.user.username = serializer.validated_data['username']
-        request.user.is_setup_complete = True
-        request.user.save()
+        with transaction.atomic():
+            # Update username and setup status
+            request.user.username = serializer.validated_data['username']
+            request.user.is_setup_complete = True
+            request.user.save()
+            
+            # Get or create profile
+            profile, created = Profile.objects.get_or_create(user=request.user)
+            
+            # Initialize profile with default widgets if it's a new profile
+            if created or not profile.layout or not profile.layout.get('widgets'):
+                default_widgets = [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "type": "interests",
+                        "position": {"x": 0, "y": 0},
+                        "size": {"w": 1, "h": 2},
+                        "visibility": "public",
+                        "config": {}
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "type": "tasks",
+                        "position": {"x": 1, "y": 0},
+                        "size": {"w": 2, "h": 2},
+                        "visibility": "public",
+                        "config": {}
+                    }
+                ]
+                
+                profile.layout = {"widgets": default_widgets}
+                profile.save()
         
         return Response({
-            'user': UserSerializer(request.user).data
+            'user': UserSerializer(request.user).data,
+            'message': 'Profile setup completed successfully!'
         })
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 @api_view(['GET', 'PATCH'])
@@ -210,13 +241,37 @@ def widget_data(request):
     """Get all widget data for current user"""
     user = request.user
     
+    # Get user's actual data
+    tasks = Task.objects.filter(user=user)
+    habits = HabitStreak.objects.filter(user=user)
+    interests = UserInterest.objects.filter(user=user)
+    
+    # Get recent habit logs for graph
+    habit_logs = []
+    if habits.exists():
+        from datetime import datetime, timedelta
+        today = datetime.now().date()
+        last_28_days = [today - timedelta(days=i) for i in range(27, -1, -1)]
+        
+        # For the first habit, get completion data
+        first_habit = habits.first()
+        habit_logs = [
+            HabitLog.objects.filter(
+                habit=first_habit,
+                date=day,
+                completed=True
+            ).exists() for day in last_28_days
+        ]
+    
     data = {
-        'habits': HabitStreakSerializer(user.habits.all(), many=True).data,
-        'tasks': TaskSerializer(user.tasks.all(), many=True).data,
-        'interests': UserInterestSerializer(user.user_interests.all(), many=True).data,
+        'tasks': TaskSerializer(tasks, many=True).data,
+        'habits': HabitStreakSerializer(habits, many=True).data,
+        'interests': UserInterestSerializer(interests, many=True).data,
+        'habitGraphData': habit_logs,
     }
     
     return Response(data)
+
 
 
 # Additional endpoints for widget management

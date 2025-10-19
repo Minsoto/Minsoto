@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/stores/authStore";
 
 const Link = ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (
   <a href={href} className={className}>
@@ -54,6 +56,19 @@ export default function Home() {
 
     return () => clearInterval(interval);
   }, [kanjiElements.length]);
+
+  const { isAuthenticated, user } = useAuthStore();
+const router = useRouter();
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (!user.is_setup_complete) {
+        router.push("/setup-username");
+      } else {
+        router.push(`/profile/${user.username}`);
+      }
+    }
+  }, [isAuthenticated, user, router]);
 
   return (
     <div

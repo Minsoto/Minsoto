@@ -6,9 +6,9 @@ import { Plus, Grid3x3, Palette, Edit3, Save } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 
-import ProfileSidebar from '@/components/profile/ProfileSidebar';
-import ProfileCanvas from '@/components/profile/ProfileCanvas';
-import WidgetLibrary from '@/components/profile/WidgetLibrary';
+import ProfileSidebar from '@/app/profile/ProfileSidebar';
+import ProfileCanvas from '@/app/profile/ProfileCanvas';
+import WidgetLibrary from '@/app/profile/WidgetLibrary';
 
 interface User {
   id: string;
