@@ -9,6 +9,8 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
+from django.db.models import Q
 
 from .models import Profile, HabitStreak, Task, UserInterest, Interest, HabitLog
 from .serializers import (
@@ -175,7 +177,8 @@ def profile_me(request):
     elif request.method == 'PATCH':
         serializer = ProfileSerializer(profile, data=request.data, partial=True)
         if serializer.is_valid():
-            serializer.save()
+            with transaction.atomic():
+                serializer.save()
             return Response(ProfileDetailSerializer(profile).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -241,27 +244,32 @@ def widget_data(request):
     """Get all widget data for current user"""
     user = request.user
     
-    # Get user's actual data
-    tasks = Task.objects.filter(user=user)
-    habits = HabitStreak.objects.filter(user=user)
-    interests = UserInterest.objects.filter(user=user)
+    # Optimized queries with select_related/prefetch_related
+    tasks = Task.objects.filter(user=user).only(
+        'id', 'title', 'description', 'status', 'priority', 'due_date', 
+        'is_public', 'created_at', 'updated_at'
+    )
+    habits = HabitStreak.objects.filter(user=user).prefetch_related('logs')
+    interests = UserInterest.objects.filter(user=user).select_related('interest')
     
-    # Get recent habit logs for graph
+    # Get recent habit logs for graph using bulk query
     habit_logs = []
     if habits.exists():
-        from datetime import datetime, timedelta
-        today = datetime.now().date()
+        today = timezone.now().date()
+        from datetime import timedelta
         last_28_days = [today - timedelta(days=i) for i in range(27, -1, -1)]
         
-        # For the first habit, get completion data
+        # For the first habit, get completion data with bulk query
         first_habit = habits.first()
-        habit_logs = [
-            HabitLog.objects.filter(
-                habit=first_habit,
-                date=day,
-                completed=True
-            ).exists() for day in last_28_days
-        ]
+        if first_habit:
+            completed_dates = set(
+                HabitLog.objects.filter(
+                    habit=first_habit,
+                    date__in=last_28_days,
+                    completed=True
+                ).values_list('date', flat=True)
+            )
+            habit_logs = [day in completed_dates for day in last_28_days]
     
     data = {
         'tasks': TaskSerializer(tasks, many=True).data,
@@ -422,3 +430,14 @@ def remove_interest(request, interest_id):
             {'error': 'Interest not found'},
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """Health check endpoint for monitoring"""
+    return Response({
+        'status': 'healthy',
+        'timestamp': timezone.now().isoformat(),
+        'service': 'minsoto-backend'
+    })

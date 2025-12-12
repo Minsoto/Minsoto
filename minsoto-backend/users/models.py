@@ -96,6 +96,9 @@ class UserInterest(models.Model):
     class Meta:
         unique_together = ['user', 'interest']
         ordering = ['-added_at']
+        indexes = [
+            models.Index(fields=['user', '-added_at']),
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.interest.name}"
@@ -130,6 +133,10 @@ class HabitLog(models.Model):
     class Meta:
         unique_together = ['habit', 'date']
         ordering = ['-date']
+        indexes = [
+            models.Index(fields=['habit', '-date']),
+            models.Index(fields=['date', 'completed']),
+        ]
 
     def __str__(self):
         return f"{self.habit.name} - {self.date}"
@@ -161,6 +168,11 @@ class Task(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['due_date']),
+        ]
 
     def __str__(self):
         return f"{self.user.username} - {self.title}"

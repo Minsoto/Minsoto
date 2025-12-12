@@ -30,4 +30,7 @@ urlpatterns = [
     path('interests/', views.interests_list, name='interests_list'),
     path('interests/add/', views.add_interest, name='add_interest'),
     path('interests/<uuid:interest_id>/remove/', views.remove_interest, name='remove_interest'),
+    
+    # Health Check
+    path('health/', views.health_check, name='health_check'),
 ]
