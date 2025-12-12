@@ -12,7 +12,10 @@ from django.db import transaction
 from django.utils import timezone
 from django.db.models import Q
 
-from .models import Profile, HabitStreak, Task, UserInterest, Interest, HabitLog
+from .models import (
+    Profile, HabitStreak, Task, UserInterest, Interest, HabitLog,
+    Organization, OrganizationMembership, Connection, extract_email_domain
+)
 from .serializers import (
     GoogleAuthSerializer,
     UserSerializer,
@@ -23,7 +26,13 @@ from .serializers import (
     UserInterestSerializer,
     ProfileDetailSerializer,
     LayoutUpdateSerializer,
-    InterestSerializer
+    InterestSerializer,
+    OrganizationSerializer,
+    OrganizationDetailSerializer,
+    OrganizationMembershipSerializer,
+    ConnectionSerializer,
+    ConnectionRequestSerializer,
+    UserMinimalSerializer
 )
 
 User = get_user_model()
@@ -441,3 +450,450 @@ def health_check(request):
         'timestamp': timezone.now().isoformat(),
         'service': 'minsoto-backend'
     })
+
+
+# =============================================================================
+# PHASE 2A: Organizations Endpoints
+# =============================================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def organizations_list(request):
+    """List all verified organizations"""
+    organizations = Organization.objects.filter(is_verified=True)
+    serializer = OrganizationSerializer(organizations, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def organization_detail(request, domain):
+    """Get organization details and members"""
+    try:
+        organization = Organization.objects.get(domain=domain)
+        serializer = OrganizationDetailSerializer(organization)
+        
+        # Check if current user is a member
+        is_member = OrganizationMembership.objects.filter(
+            user=request.user,
+            organization=organization,
+            verification_status='verified'
+        ).exists()
+        
+        return Response({
+            'organization': serializer.data,
+            'is_member': is_member
+        })
+    except Organization.DoesNotExist:
+        return Response(
+            {'error': 'Organization not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def verify_organization(request):
+    """
+    Verify organization membership via Google OAuth.
+    Expects: { "credential": "google_oauth_token" }
+    """
+    credential = request.data.get('credential')
+    if not credential:
+        return Response(
+            {'error': 'Google credential required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        # Verify the Google token
+        idinfo = id_token.verify_oauth2_token(
+            credential,
+            google_requests.Request(),
+            settings.GOOGLE_CLIENT_ID
+        )
+        
+        email = idinfo['email']
+        domain = extract_email_domain(email)
+        
+        if not domain:
+            return Response(
+                {'error': 'Invalid email format'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        with transaction.atomic():
+            # Get or create organization
+            organization, created = Organization.objects.get_or_create(
+                domain=domain,
+                defaults={
+                    'name': domain.split('.')[0].upper(),  # Basic name from domain
+                    'org_type': 'other'
+                }
+            )
+            
+            # Create or update membership
+            membership, mem_created = OrganizationMembership.objects.update_or_create(
+                user=request.user,
+                organization=organization,
+                defaults={
+                    'verification_status': 'verified',
+                    'verification_email': email,
+                    'is_primary': not request.user.organization_memberships.filter(
+                        is_primary=True
+                    ).exists()
+                }
+            )
+        
+        return Response({
+            'message': f'Successfully verified with {organization.name}',
+            'organization': OrganizationSerializer(organization).data,
+            'membership': OrganizationMembershipSerializer(membership).data
+        }, status=status.HTTP_201_CREATED if mem_created else status.HTTP_200_OK)
+        
+    except ValueError as e:
+        return Response(
+            {'error': f'Invalid Google token: {str(e)}'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def my_organizations(request):
+    """Get current user's organizations"""
+    memberships = request.user.organization_memberships.filter(
+        verification_status='verified'
+    ).select_related('organization')
+    serializer = OrganizationMembershipSerializer(memberships, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def leave_organization(request, org_id):
+    """Leave an organization"""
+    try:
+        membership = OrganizationMembership.objects.get(
+            user=request.user,
+            organization_id=org_id
+        )
+        membership.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    except OrganizationMembership.DoesNotExist:
+        return Response(
+            {'error': 'Membership not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+# =============================================================================
+# PHASE 2A: Connections Endpoints
+# =============================================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def connections_list(request):
+    """List user's connections. Query params: ?type=all|friends|connections"""
+    connection_type = request.query_params.get('type', 'all')
+    
+    connections = Connection.objects.filter(
+        Q(from_user=request.user) | Q(to_user=request.user),
+        status='accepted'
+    ).select_related('from_user', 'to_user', 'from_user__profile', 'to_user__profile')
+    
+    if connection_type == 'friends':
+        connections = connections.filter(connection_type='friend')
+    elif connection_type == 'connections':
+        connections = connections.filter(connection_type='connection')
+    
+    serializer = ConnectionSerializer(connections, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def pending_connections(request):
+    """Get pending connection requests received by current user"""
+    pending = Connection.objects.filter(
+        to_user=request.user,
+        status='pending'
+    ).select_related('from_user', 'from_user__profile')
+    serializer = ConnectionSerializer(pending, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def sent_connections(request):
+    """Get connection requests sent by current user"""
+    sent = Connection.objects.filter(
+        from_user=request.user,
+        status='pending'
+    ).select_related('to_user', 'to_user__profile')
+    serializer = ConnectionSerializer(sent, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def send_connection_request(request):
+    """Send a connection request to another user"""
+    serializer = ConnectionRequestSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    to_user_id = serializer.validated_data['to_user_id']
+    message = serializer.validated_data.get('message', '')
+    
+    # Can't connect to yourself
+    if str(to_user_id) == str(request.user.id):
+        return Response(
+            {'error': 'Cannot connect to yourself'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        to_user = User.objects.get(id=to_user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'error': 'User not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Check if connection already exists
+    existing = Connection.get_connection_between(request.user, to_user)
+    if existing:
+        if existing.status == 'accepted':
+            return Response(
+                {'error': 'Already connected'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif existing.status == 'pending':
+            return Response(
+                {'error': 'Connection request already pending'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    # Create connection request
+    connection = Connection.objects.create(
+        from_user=request.user,
+        to_user=to_user,
+        message=message,
+        status='pending'
+    )
+    
+    return Response(
+        ConnectionSerializer(connection).data,
+        status=status.HTTP_201_CREATED
+    )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def accept_connection(request):
+    """Accept a pending connection request"""
+    connection_id = request.data.get('connection_id')
+    if not connection_id:
+        return Response(
+            {'error': 'connection_id is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        connection = Connection.objects.get(
+            id=connection_id,
+            to_user=request.user,
+            status='pending'
+        )
+    except Connection.DoesNotExist:
+        return Response(
+            {'error': 'Connection request not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    connection.status = 'accepted'
+    connection.save()
+    
+    return Response(ConnectionSerializer(connection).data)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def reject_connection(request):
+    """Reject a pending connection request"""
+    connection_id = request.data.get('connection_id')
+    if not connection_id:
+        return Response(
+            {'error': 'connection_id is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        connection = Connection.objects.get(
+            id=connection_id,
+            to_user=request.user,
+            status='pending'
+        )
+    except Connection.DoesNotExist:
+        return Response(
+            {'error': 'Connection request not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    connection.status = 'rejected'
+    connection.save()
+    
+    return Response({'message': 'Connection request rejected'})
+
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def remove_connection(request, connection_id):
+    """Remove an existing connection"""
+    try:
+        connection = Connection.objects.get(
+            Q(from_user=request.user) | Q(to_user=request.user),
+            id=connection_id,
+            status='accepted'
+        )
+    except Connection.DoesNotExist:
+        return Response(
+            {'error': 'Connection not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    connection.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upgrade_to_friend(request):
+    """Upgrade a connection to friend status (requires mutual agreement)"""
+    connection_id = request.data.get('connection_id')
+    if not connection_id:
+        return Response(
+            {'error': 'connection_id is required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        connection = Connection.objects.get(
+            Q(from_user=request.user) | Q(to_user=request.user),
+            id=connection_id,
+            status='accepted',
+            connection_type='connection'
+        )
+    except Connection.DoesNotExist:
+        return Response(
+            {'error': 'Connection not found or already friends'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    connection.connection_type = 'friend'
+    connection.save()
+    
+    return Response({
+        'message': 'Upgraded to friend',
+        'connection': ConnectionSerializer(connection).data
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def connection_status(request, user_id):
+    """Check connection status with a specific user"""
+    try:
+        other_user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'error': 'User not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    connection = Connection.get_connection_between(request.user, other_user)
+    
+    if not connection:
+        return Response({'status': 'none', 'connection': None})
+    
+    if connection.status == 'pending':
+        if connection.from_user == request.user:
+            return Response({'status': 'pending_sent', 'connection': ConnectionSerializer(connection).data})
+        else:
+            return Response({'status': 'pending_received', 'connection': ConnectionSerializer(connection).data})
+    elif connection.status == 'accepted':
+        if connection.connection_type == 'friend':
+            return Response({'status': 'friends', 'connection': ConnectionSerializer(connection).data})
+        else:
+            return Response({'status': 'connected', 'connection': ConnectionSerializer(connection).data})
+    
+    return Response({'status': 'none', 'connection': None})
+
+
+# =============================================================================
+# PHASE 2A: User Discovery Endpoint
+# =============================================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def discover_users(request):
+    """
+    Discover users with optional filters.
+    Query params: ?search=&organization=&interests=
+    """
+    search = request.query_params.get('search', '')
+    organization_domain = request.query_params.get('organization', '')
+    
+    # Start with all users except current user
+    users = User.objects.exclude(id=request.user.id).filter(
+        is_setup_complete=True
+    ).select_related('profile')
+    
+    # Filter by search term (username, first_name, last_name)
+    if search:
+        users = users.filter(
+            Q(username__icontains=search) |
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search)
+        )
+    
+    # Filter by organization
+    if organization_domain:
+        users = users.filter(
+            organization_memberships__organization__domain=organization_domain,
+            organization_memberships__verification_status='verified',
+            organization_memberships__is_visible=True
+        )
+    
+    # Limit results
+    users = users[:50]
+    
+    # Get connection status for each user
+    results = []
+    for user in users:
+        connection = Connection.get_connection_between(request.user, user)
+        connection_status_val = 'none'
+        if connection:
+            if connection.status == 'pending':
+                connection_status_val = 'pending_sent' if connection.from_user == request.user else 'pending_received'
+            elif connection.status == 'accepted':
+                connection_status_val = 'friends' if connection.connection_type == 'friend' else 'connected'
+        
+        user_data = UserMinimalSerializer(user).data
+        user_data['connection_status'] = connection_status_val
+        
+        # Add interests
+        interests = user.user_interests.filter(is_public=True)[:5]
+        user_data['interests'] = [ui.interest.name for ui in interests]
+        
+        # Add organizations
+        orgs = user.organization_memberships.filter(
+            verification_status='verified',
+            show_on_profile=True
+        ).select_related('organization')[:3]
+        user_data['organizations'] = [m.organization.name for m in orgs]
+        
+        results.append(user_data)
+    
+    return Response(results)

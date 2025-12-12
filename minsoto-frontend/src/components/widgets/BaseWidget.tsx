@@ -17,7 +17,7 @@ interface BaseWidgetProps {
 }
 
 export default function BaseWidget({
-  id,
+  id: _id,
   title,
   children,
   visibility,

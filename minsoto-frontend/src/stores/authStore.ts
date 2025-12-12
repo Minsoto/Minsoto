@@ -15,6 +15,8 @@ interface AuthState {
   user: User | null;
   accessToken: string | null;
   refreshToken: string | null;
+  _hasHydrated: boolean;
+  setHasHydrated: (state: boolean) => void;
   login: (tokens: { access: string; refresh: string }, user: User) => void;
   logout: () => void;
   updateUser: (user: User) => void;
@@ -27,11 +29,15 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       accessToken: null,
       refreshToken: null,
+      _hasHydrated: false,
+      setHasHydrated: (state) => {
+        set({ _hasHydrated: state });
+      },
       login: (tokens, user) => {
         // Store in localStorage for API interceptor
         localStorage.setItem('access_token', tokens.access);
         localStorage.setItem('refresh_token', tokens.refresh);
-        
+
         set({
           isAuthenticated: true,
           user,
@@ -43,7 +49,7 @@ export const useAuthStore = create<AuthState>()(
         // Clear localStorage
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
-        
+
         // Clear Zustand store
         set({
           isAuthenticated: false,
@@ -51,7 +57,7 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           refreshToken: null,
         });
-        
+
         // Clear persisted data
         get().logout = () => {
           localStorage.removeItem('access_token');
@@ -75,6 +81,9 @@ export const useAuthStore = create<AuthState>()(
         user: state.user,
         // Don't persist tokens, they're in localStorage
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

@@ -24,8 +24,11 @@ export default function Navigation() {
         </div>
 
         <div className="flex items-center gap-6 text-sm">
-          <Link href="/feed" className="opacity-70 hover:opacity-100 transition-opacity">
-            GLOBAL FEED
+          <Link href="/discover" className="opacity-70 hover:opacity-100 transition-opacity">
+            DISCOVER
+          </Link>
+          <Link href="/connections" className="opacity-70 hover:opacity-100 transition-opacity">
+            CONNECTIONS
           </Link>
           <Link href="/community" className="opacity-70 hover:opacity-100 transition-opacity">
             COMMUNITY
@@ -40,7 +43,7 @@ export default function Navigation() {
             <button className="w-8 h-8 rounded-full bg-white bg-opacity-10 hover:bg-opacity-20 transition-colors" />
           </Link>
           <button className="opacity-70 hover:opacity-100 transition-opacity">🔔</button>
-          <button 
+          <button
             onClick={handleLogout}
             className="opacity-70 hover:opacity-100 transition-opacity text-xs"
           >

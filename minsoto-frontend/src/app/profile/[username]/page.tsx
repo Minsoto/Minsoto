@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Plus, Grid3x3, Palette, Edit3, Save } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
@@ -86,7 +87,7 @@ export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
-  
+
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isWidgetLibraryOpen, setIsWidgetLibraryOpen] = useState(false);
@@ -134,7 +135,7 @@ export default function ProfilePage() {
 
     try {
       await api.patch('/profile/me/layout/', { layout: newLayout });
-      
+
       setProfileData(prev => prev ? {
         ...prev,
         profile: {
@@ -185,7 +186,7 @@ export default function ProfilePage() {
 
     const currentWidgets = profileData.profile.layout?.widgets || [];
     const updatedWidgets = [...currentWidgets, newWidget];
-    
+
     handleLayoutChange(updatedWidgets);
   }, [profileData, handleLayoutChange]);
 
@@ -225,9 +226,9 @@ export default function ProfilePage() {
           </div>
 
           <div className="flex items-center gap-6 text-sm">
-            <a href="/feed" className="opacity-70 hover:opacity-100">GLOBAL FEED</a>
-            <a href="/community" className="opacity-70 hover:opacity-100">COMMUNITY</a>
-            <a href="/circles" className="opacity-70 hover:opacity-100">CIRCLES</a>
+            <Link href="/feed" className="opacity-70 hover:opacity-100">GLOBAL FEED</Link>
+            <Link href="/community" className="opacity-70 hover:opacity-100">COMMUNITY</Link>
+            <Link href="/circles" className="opacity-70 hover:opacity-100">CIRCLES</Link>
           </div>
 
           <div className="flex items-center gap-4">
@@ -274,11 +275,10 @@ export default function ProfilePage() {
             {/* Edit Mode Toggle */}
             <button
               onClick={toggleEditMode}
-              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${
-                isEditMode 
-                  ? 'bg-green-500 text-black' 
+              className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${isEditMode
+                  ? 'bg-green-500 text-black'
                   : 'bg-black border border-white text-white'
-              }`}
+                }`}
               title={isEditMode ? 'Save Layout' : 'Edit Mode'}
             >
               {isEditMode ? <Save size={20} /> : <Edit3 size={20} />}

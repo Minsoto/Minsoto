@@ -1,6 +1,7 @@
 'use client';
 
-import { User, Users, MessageCircle } from 'lucide-react';
+import Image from 'next/image';
+import { User, Users } from 'lucide-react';
 
 interface ProfileSidebarProps {
   user: {
@@ -39,9 +40,11 @@ export default function ProfileSidebar({
       <div className="relative mb-6">
         <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center mx-auto">
           {user.profile_picture_url ? (
-            <img
+            <Image
               src={user.profile_picture_url}
               alt={user.username}
+              width={80}
+              height={80}
               className="w-full h-full rounded-full object-cover"
             />
           ) : (
