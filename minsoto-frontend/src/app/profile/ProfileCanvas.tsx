@@ -120,7 +120,8 @@ export default function ProfileCanvas({
           <HabitStreakWidget
             {...commonProps}
             habits={widgetData.habits || []}
-            totalDays={38}
+            currentStreak={12}
+            longestStreak={38}
           />
         );
 
@@ -128,8 +129,7 @@ export default function ProfileCanvas({
         return (
           <HabitGraphWidget
             {...commonProps}
-            days={28}
-            data={widgetData.habitGraphData || []}
+            data={[]}
           />
         );
 
@@ -155,16 +155,16 @@ export default function ProfileCanvas({
   };
 
   return (
-    <div className="flex-1 bg-black p-6 overflow-auto">
+    <div className="flex-1 bg-[#0d0d12] p-6 overflow-auto">
       {/* Header */}
       <div className="mb-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm tracking-widest opacity-70">PROFILE CANVAS</h2>
+          <h2 className="text-xs tracking-wider text-white/60 uppercase">Profile Canvas</h2>
           {isEditMode && isOwner && (
-            <span className="text-xs opacity-50">Edit Mode Active</span>
+            <span className="text-xs text-purple-400/70">Edit Mode Active</span>
           )}
         </div>
-        <div className="h-px bg-white opacity-10 mt-2" />
+        <div className="h-px bg-white/10 mt-2" />
       </div>
 
       {/* Grid Layout */}

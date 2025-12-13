@@ -21,6 +21,7 @@ urlpatterns = [
     # Habits
     path('habits/', views.habits_list, name='habits_list'),
     path('habits/<uuid:habit_id>/', views.habit_detail, name='habit_detail'),
+    path('habits/<uuid:habit_id>/log/', views.habit_log, name='habit_log'),
     
     # Tasks
     path('tasks/', views.tasks_list, name='tasks_list'),
@@ -68,5 +69,11 @@ urlpatterns = [
     path('dashboard/layout/', views.dashboard_layout_update, name='dashboard_layout_update'),
     path('dashboard/focus/', views.dashboard_focus, name='dashboard_focus'),
     path('dashboard/stats/', views.dashboard_stats, name='dashboard_stats'),
+    
+    # =========================================================================
+    # PHASE 2C: Friendship System
+    # =========================================================================
+    path('connections/upgrade/confirm/', views.confirm_friend_upgrade, name='confirm_friend_upgrade'),
+    path('connections/mutual/<uuid:user_id>/', views.mutual_friends, name='mutual_friends'),
 ]
 

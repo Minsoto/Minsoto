@@ -297,6 +297,15 @@ class Connection(models.Model):
         default='connection'
     )
     message = models.TextField(blank=True, max_length=500)  # Optional message with request
+    # Phase 2C: Track friend upgrade requests
+    friend_upgrade_requested_by = models.ForeignKey(
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='friend_upgrade_requests'
+    )
+    friend_upgrade_requested_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

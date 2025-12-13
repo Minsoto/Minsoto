@@ -53,6 +53,8 @@ export interface Connection {
     status: 'pending' | 'accepted' | 'rejected';
     connection_type: 'connection' | 'friend';
     message: string;
+    friend_upgrade_requested_by?: string;  // User ID who requested upgrade
+    friend_upgrade_requested_at?: string;
     created_at: string;
     updated_at: string;
 }

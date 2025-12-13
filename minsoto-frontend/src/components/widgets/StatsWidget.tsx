@@ -10,6 +10,7 @@ interface StatsWidgetProps {
   currentValue: number;
   targetValue: number;
   label: string;
+  change?: number; // Percentage change
   onVisibilityToggle?: () => void;
   onDelete?: () => void;
 }
@@ -22,53 +23,50 @@ export default function StatsWidget({
   currentValue,
   targetValue,
   label,
+  change = 0,
   onVisibilityToggle,
   onDelete
 }: StatsWidgetProps) {
   const percentage = Math.round((currentValue / targetValue) * 100);
+  const isPositive = change >= 0;
 
   return (
     <BaseWidget
       id={id}
-      title="STATS"
+      title="Stats"
       visibility={visibility}
       isEditMode={isEditMode}
       isOwner={isOwner}
       onVisibilityToggle={onVisibilityToggle}
       onDelete={onDelete}
+      accent="blue"
     >
       <div className="h-full flex flex-col justify-between">
         {/* Main Value */}
-        <div className="text-center">
-          <div className="text-5xl font-thin mb-2">{currentValue}</div>
-          <div className="text-xs opacity-50 uppercase">{label}</div>
+        <div className="flex-1 flex flex-col justify-center">
+          <div className="stat-value text-white mb-1">{currentValue}</div>
+          <div className="text-sm text-white/50 uppercase tracking-wide">{label}</div>
+
+          {/* Change indicator */}
+          {change !== 0 && (
+            <div className={`text-xs mt-2 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+              {isPositive ? '+' : ''}{change}% from last week
+            </div>
+          )}
         </div>
 
         {/* Progress Bar */}
         <div className="space-y-2">
-          <div className="w-full h-1 bg-gray-800 overflow-hidden">
-            <div 
-              className="h-full bg-white transition-all duration-500"
-              style={{ width: `${percentage}%` }}
-            />
-          </div>
-          <div className="flex justify-between text-xs opacity-50">
+          <div className="flex justify-between text-xs text-white/40">
             <span>{currentValue}/{targetValue}</span>
             <span>{percentage}%</span>
           </div>
-        </div>
-
-        {/* Weekly Graph */}
-        <div className="grid grid-cols-7 gap-1 mt-2">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
-            <div key={day} className="text-center">
-              <div className="text-[8px] opacity-30 mb-1">{day[0]}</div>
-              <div 
-                className="h-8 bg-white opacity-20"
-                style={{ opacity: 0.1 + (index * 0.1) }}
-              />
-            </div>
-          ))}
+          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(percentage, 100)}%` }}
+            />
+          </div>
         </div>
       </div>
     </BaseWidget>

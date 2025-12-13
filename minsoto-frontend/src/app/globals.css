@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #ffffff;
+  --card-bg: rgba(255, 255, 255, 0.02);
+  --card-border: rgba(255, 255, 255, 0.1);
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
 }
 
 @theme inline {
@@ -14,15 +19,65 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #000000;
+    --foreground: #ffffff;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', Arial, Helvetica, sans-serif;
+}
+
+/* Widget card styles */
+.widget-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  transition: all 0.3s ease;
+}
+
+.widget-card:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Contribution grid cell */
+.contrib-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  transition: all 0.2s ease;
+}
+
+.contrib-cell:hover {
+  transform: scale(1.2);
+}
+
+.contrib-0 {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.contrib-1 {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.contrib-2 {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.contrib-3 {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.contrib-4 {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+/* Stat card */
+.stat-value {
+  font-size: 2.5rem;
+  font-weight: 200;
+  line-height: 1;
 }
 
 
@@ -69,13 +124,13 @@ body {
   border: 1px dashed rgba(255, 255, 255, 0.3);
 }
 
-.react-grid-item > .react-resizable-handle {
+.react-grid-item>.react-resizable-handle {
   position: absolute;
   width: 20px;
   height: 20px;
 }
 
-.react-grid-item > .react-resizable-handle::after {
+.react-grid-item>.react-resizable-handle::after {
   content: "";
   position: absolute;
   right: 3px;
@@ -86,67 +141,67 @@ body {
   border-bottom: 2px solid rgba(255, 255, 255, 0.4);
 }
 
-.react-resizable-hide > .react-resizable-handle {
+.react-resizable-hide>.react-resizable-handle {
   display: none;
 }
 
-.react-grid-item > .react-resizable-handle.react-resizable-handle-sw {
+.react-grid-item>.react-resizable-handle.react-resizable-handle-sw {
   bottom: 0;
   left: 0;
   cursor: sw-resize;
   transform: rotate(90deg);
 }
 
-.react-grid-item > .react-resizable-handle.react-resizable-handle-se {
+.react-grid-item>.react-resizable-handle.react-resizable-handle-se {
   bottom: 0;
   right: 0;
   cursor: se-resize;
 }
 
-.react-grid-item > .react-resizable-handle.react-resizable-handle-nw {
+.react-grid-item>.react-resizable-handle.react-resizable-handle-nw {
   top: 0;
   left: 0;
   cursor: nw-resize;
   transform: rotate(180deg);
 }
 
-.react-grid-item > .react-resizable-handle.react-resizable-handle-ne {
+.react-grid-item>.react-resizable-handle.react-resizable-handle-ne {
   top: 0;
   right: 0;
   cursor: ne-resize;
   transform: rotate(270deg);
 }
 
-.react-grid-item > .react-resizable-handle.react-resizable-handle-w,
-.react-grid-item > .react-resizable-handle.react-resizable-handle-e {
+.react-grid-item>.react-resizable-handle.react-resizable-handle-w,
+.react-grid-item>.react-resizable-handle.react-resizable-handle-e {
   top: 50%;
   margin-top: -10px;
   cursor: ew-resize;
 }
 
-.react-grid-item > .react-resizable-handle.react-resizable-handle-w {
+.react-grid-item>.react-resizable-handle.react-resizable-handle-w {
   left: 0;
   transform: rotate(135deg);
 }
 
-.react-grid-item > .react-resizable-handle.react-resizable-handle-e {
+.react-grid-item>.react-resizable-handle.react-resizable-handle-e {
   right: 0;
   transform: rotate(315deg);
 }
 
-.react-grid-item > .react-resizable-handle.react-resizable-handle-n,
-.react-grid-item > .react-resizable-handle.react-resizable-handle-s {
+.react-grid-item>.react-resizable-handle.react-resizable-handle-n,
+.react-grid-item>.react-resizable-handle.react-resizable-handle-s {
   left: 50%;
   margin-left: -10px;
   cursor: ns-resize;
 }
 
-.react-grid-item > .react-resizable-handle.react-resizable-handle-n {
+.react-grid-item>.react-resizable-handle.react-resizable-handle-n {
   top: 0;
   transform: rotate(225deg);
 }
 
-.react-grid-item > .react-resizable-handle.react-resizable-handle-s {
+.react-grid-item>.react-resizable-handle.react-resizable-handle-s {
   bottom: 0;
   transform: rotate(45deg);
 }

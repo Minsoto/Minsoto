@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { useConnectionsStore } from '@/stores/connectionsStore';
+import { useAuthStore } from '@/stores/authStore';
 import type { Connection } from '@/types/connections';
 
 interface ConnectionCardProps {
@@ -17,7 +18,8 @@ export default function ConnectionCard({
     variant = 'connected'
 }: ConnectionCardProps) {
     const [loading, setLoading] = useState(false);
-    const { acceptConnection, rejectConnection, removeConnection, upgradeToFriend } = useConnectionsStore();
+    const { acceptConnection, rejectConnection, removeConnection, upgradeToFriend, confirmFriendUpgrade } = useConnectionsStore();
+    const { user } = useAuthStore();
 
     // Determine the other user in the connection
     const otherUser = connection.from_user.id === currentUserId
@@ -26,6 +28,10 @@ export default function ConnectionCard({
 
     const isPending = variant === 'pending';
     const isFriend = connection.connection_type === 'friend';
+
+    // Check if there's a pending friend upgrade
+    const hasPendingUpgrade = !!connection.friend_upgrade_requested_by;
+    const iUpgradedThis = connection.friend_upgrade_requested_by === user?.id;
 
     const handleAccept = async () => {
         setLoading(true);
@@ -50,6 +56,12 @@ export default function ConnectionCard({
     const handleUpgrade = async () => {
         setLoading(true);
         await upgradeToFriend(connection.id);
+        setLoading(false);
+    };
+
+    const handleConfirmUpgrade = async (action: 'accept' | 'reject') => {
+        setLoading(true);
+        await confirmFriendUpgrade(connection.id, action);
         setLoading(false);
     };
 
@@ -120,8 +132,38 @@ export default function ConnectionCard({
                     </>
                 ) : (
                     <>
-                        {/* Upgrade to friend (if not already) */}
-                        {!isFriend && (
+                        {/* Pending friend upgrade - show confirm/reject if someone else requested */}
+                        {hasPendingUpgrade && !iUpgradedThis && (
+                            <>
+                                <span className="text-xs text-yellow-400 mr-2">
+                                    Friend request pending
+                                </span>
+                                <button
+                                    onClick={() => handleConfirmUpgrade('accept')}
+                                    disabled={loading}
+                                    className="px-3 py-1.5 text-xs bg-white text-black hover:bg-white/90 transition-colors disabled:opacity-50"
+                                >
+                                    Accept Friend
+                                </button>
+                                <button
+                                    onClick={() => handleConfirmUpgrade('reject')}
+                                    disabled={loading}
+                                    className="px-3 py-1.5 text-xs border border-white/20 text-white/60 hover:text-white transition-colors disabled:opacity-50"
+                                >
+                                    Decline
+                                </button>
+                            </>
+                        )}
+
+                        {/* Pending upgrade requested by me */}
+                        {hasPendingUpgrade && iUpgradedThis && (
+                            <span className="px-3 py-1.5 text-xs text-yellow-400/70 border border-yellow-400/30">
+                                Friend request sent
+                            </span>
+                        )}
+
+                        {/* Upgrade to friend (if not already and no pending) */}
+                        {!isFriend && !hasPendingUpgrade && (
                             <button
                                 onClick={handleUpgrade}
                                 disabled={loading}

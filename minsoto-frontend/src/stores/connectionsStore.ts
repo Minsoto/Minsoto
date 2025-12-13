@@ -26,6 +26,7 @@ interface ConnectionsState {
     rejectConnection: (connectionId: string) => Promise<boolean>;
     removeConnection: (connectionId: string) => Promise<boolean>;
     upgradeToFriend: (connectionId: string) => Promise<boolean>;
+    confirmFriendUpgrade: (connectionId: string, action: 'accept' | 'reject') => Promise<boolean>;
     getConnectionStatus: (userId: string) => Promise<{ status: ConnectionStatus; connection: Connection | null }>;
 
     // Actions - Organizations
@@ -146,6 +147,36 @@ export const useConnectionsStore = create<ConnectionsState>()((set) => ({
             return true;
         } catch (error) {
             console.error('Failed to upgrade to friend:', error);
+            return false;
+        }
+    },
+
+    confirmFriendUpgrade: async (connectionId: string, action: 'accept' | 'reject') => {
+        try {
+            const response = await api.post('/connections/upgrade/confirm/', {
+                connection_id: connectionId,
+                action
+            });
+            // Update connection in list
+            if (action === 'accept') {
+                set(state => ({
+                    connections: state.connections.map(c =>
+                        c.id === connectionId ? response.data.connection : c
+                    )
+                }));
+            } else {
+                // Remove upgrade request flag
+                set(state => ({
+                    connections: state.connections.map(c =>
+                        c.id === connectionId
+                            ? { ...c, friend_upgrade_requested_by: undefined, friend_upgrade_requested_at: undefined }
+                            : c
+                    )
+                }));
+            }
+            return true;
+        } catch (error) {
+            console.error('Failed to confirm friend upgrade:', error);
             return false;
         }
     },

@@ -31,41 +31,40 @@ export default function InterestsWidget({
   return (
     <BaseWidget
       id={id}
-      title="INTERESTS"
+      title="Interests"
       visibility={visibility}
       isEditMode={isEditMode}
       isOwner={isOwner}
       onVisibilityToggle={onVisibilityToggle}
       onDelete={onDelete}
-      className="bg-white text-black"
+      accent="purple"
     >
       <div className="h-full flex flex-col gap-4 overflow-auto">
-        {/* Interests Section */}
-        <div>
-          <div className="text-xs font-medium mb-2">INTERESTS</div>
-          <div className="flex flex-wrap gap-2">
-            {interests.map(interest => (
-              <span
-                key={interest.id}
-                className="text-xs px-2 py-1 bg-gray-200 opacity-70"
-              >
-                {interest.name}
-              </span>
-            ))}
-          </div>
+        {/* Interests Tags */}
+        <div className="flex flex-wrap gap-2">
+          {interests.map(interest => (
+            <span
+              key={interest.id}
+              className="text-xs px-3 py-1.5 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-200 hover:bg-purple-500/30 transition-colors cursor-default"
+            >
+              {interest.name}
+            </span>
+          ))}
         </div>
 
-        {/* Community Extensions Section */}
+        {/* Community Extensions */}
         {extensions.length > 0 && (
-          <div>
-            <div className="text-xs font-medium mb-2">COMMUNITY EXTENSIONS</div>
+          <div className="pt-3 border-t border-white/10">
+            <div className="text-xs text-white/40 uppercase tracking-wider mb-3">Extensions</div>
             <div className="space-y-2">
               {extensions.slice(0, 2).map((ext, index) => (
-                <div key={index} className="flex items-center gap-2 p-2 bg-gray-100">
-                  <div className="w-6 h-6 bg-gray-300 rounded-full flex-shrink-0" />
+                <div key={index} className="flex items-center gap-3 p-2 bg-white/5 rounded-lg border border-white/10">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center text-xs">
+                    {ext.name[0]}
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs font-medium truncate">{ext.name}</div>
-                    <div className="text-[10px] opacity-60 truncate">{ext.description}</div>
+                    <div className="text-sm font-medium truncate">{ext.name}</div>
+                    <div className="text-xs text-white/50 truncate">{ext.description}</div>
                   </div>
                 </div>
               ))}

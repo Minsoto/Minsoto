@@ -338,6 +338,61 @@ def habit_detail(request, habit_id):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@api_view(['POST', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def habit_log(request, habit_id):
+    """Log or unlog habit completion for today"""
+    try:
+        habit = HabitStreak.objects.get(id=habit_id, user=request.user)
+    except HabitStreak.DoesNotExist:
+        return Response({'error': 'Habit not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    today = timezone.now().date()
+    
+    if request.method == 'POST':
+        # Mark habit as completed today
+        log, created = HabitLog.objects.get_or_create(
+            habit=habit,
+            date=today,
+            defaults={'completed': True}
+        )
+        if not created:
+            log.completed = True
+            log.save()
+        
+        # Update streak
+        if created or not log.completed:
+            habit.current_streak += 1
+            if habit.current_streak > habit.longest_streak:
+                habit.longest_streak = habit.current_streak
+            habit.save()
+        
+        return Response({
+            'message': 'Habit logged',
+            'completed': True,
+            'current_streak': habit.current_streak
+        })
+    
+    elif request.method == 'DELETE':
+        # Remove today's completion
+        try:
+            log = HabitLog.objects.get(habit=habit, date=today)
+            log.completed = False
+            log.save()
+            
+            # Reset streak (simplified - in production would recalculate)
+            if habit.current_streak > 0:
+                habit.current_streak -= 1
+                habit.save()
+            
+            return Response({
+                'message': 'Habit log removed',
+                'completed': False,
+                'current_streak': habit.current_streak
+            })
+        except HabitLog.DoesNotExist:
+            return Response({'message': 'No log to remove', 'completed': False})
+
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def tasks_list(request):
@@ -773,7 +828,7 @@ def remove_connection(request, connection_id):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def upgrade_to_friend(request):
-    """Upgrade a connection to friend status (requires mutual agreement)"""
+    """Request friend upgrade (sets pending state, other user must confirm)"""
     connection_id = request.data.get('connection_id')
     if not connection_id:
         return Response(
@@ -794,12 +849,135 @@ def upgrade_to_friend(request):
             status=status.HTTP_404_NOT_FOUND
         )
     
-    connection.connection_type = 'friend'
+    # Check if upgrade already requested
+    if connection.friend_upgrade_requested_by:
+        # If the other party is requesting, confirm the upgrade
+        if connection.friend_upgrade_requested_by != request.user:
+            connection.connection_type = 'friend'
+            connection.friend_upgrade_requested_by = None
+            connection.friend_upgrade_requested_at = None
+            connection.save()
+            return Response({
+                'message': 'Friend request confirmed! You are now friends.',
+                'connection': ConnectionSerializer(connection).data
+            })
+        else:
+            return Response(
+                {'error': 'Friend request already pending'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    # Set pending friend request
+    connection.friend_upgrade_requested_by = request.user
+    connection.friend_upgrade_requested_at = timezone.now()
     connection.save()
     
     return Response({
-        'message': 'Upgraded to friend',
+        'message': 'Friend request sent',
         'connection': ConnectionSerializer(connection).data
+    })
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def confirm_friend_upgrade(request):
+    """Confirm/reject a pending friend upgrade request"""
+    connection_id = request.data.get('connection_id')
+    action = request.data.get('action')  # 'accept' or 'reject'
+    
+    if not connection_id or action not in ['accept', 'reject']:
+        return Response(
+            {'error': 'connection_id and action (accept/reject) required'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        connection = Connection.objects.get(
+            Q(from_user=request.user) | Q(to_user=request.user),
+            id=connection_id,
+            status='accepted',
+            connection_type='connection'
+        )
+    except Connection.DoesNotExist:
+        return Response(
+            {'error': 'Connection not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Verify there's a pending request and it's not from the current user
+    if not connection.friend_upgrade_requested_by:
+        return Response(
+            {'error': 'No pending friend request'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if connection.friend_upgrade_requested_by == request.user:
+        return Response(
+            {'error': 'Cannot confirm your own request'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    if action == 'accept':
+        connection.connection_type = 'friend'
+        connection.friend_upgrade_requested_by = None
+        connection.friend_upgrade_requested_at = None
+        connection.save()
+        return Response({
+            'message': 'You are now friends!',
+            'connection': ConnectionSerializer(connection).data
+        })
+    else:  # reject
+        connection.friend_upgrade_requested_by = None
+        connection.friend_upgrade_requested_at = None
+        connection.save()
+        return Response({'message': 'Friend request declined'})
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def mutual_friends(request, user_id):
+    """Get mutual friends between current user and specified user"""
+    try:
+        other_user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'error': 'User not found'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Get current user's friends
+    my_friends_q = Connection.objects.filter(
+        Q(from_user=request.user) | Q(to_user=request.user),
+        status='accepted',
+        connection_type='friend'
+    )
+    my_friend_ids = set()
+    for conn in my_friends_q:
+        if conn.from_user == request.user:
+            my_friend_ids.add(conn.to_user.id)
+        else:
+            my_friend_ids.add(conn.from_user.id)
+    
+    # Get other user's friends
+    their_friends_q = Connection.objects.filter(
+        Q(from_user=other_user) | Q(to_user=other_user),
+        status='accepted',
+        connection_type='friend'
+    )
+    their_friend_ids = set()
+    for conn in their_friends_q:
+        if conn.from_user == other_user:
+            their_friend_ids.add(conn.to_user.id)
+        else:
+            their_friend_ids.add(conn.from_user.id)
+    
+    # Find intersection
+    mutual_ids = my_friend_ids & their_friend_ids
+    mutual_users = User.objects.filter(id__in=mutual_ids)[:10]  # Limit to 10
+    
+    return Response({
+        'count': len(mutual_ids),
+        'users': UserMinimalSerializer(mutual_users, many=True).data
     })
 
 
@@ -972,7 +1150,7 @@ def dashboard_focus(request):
             'name': habit.name,
             'completed_today': completed_today,
             'current_streak': habit.current_streak,
-            'time': habit.time.strftime('%H:%M') if habit.time else None
+            'time': None  # HabitStreak doesn't have time field
         })
     
     return Response({

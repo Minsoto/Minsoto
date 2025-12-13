@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Plus, Grid3x3, Palette, Edit3, Save } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 
+import Navigation from '@/components/Navigation';
 import ProfileSidebar from '@/app/profile/ProfileSidebar';
 import ProfileCanvas from '@/app/profile/ProfileCanvas';
 import WidgetLibrary from '@/app/profile/WidgetLibrary';
@@ -218,31 +218,12 @@ export default function ProfilePage() {
   const { profile, is_owner } = profileData;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[#0d0d12] text-white">
       {/* Top Navigation */}
-      <nav className="border-b border-white border-opacity-20 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-8">
-            <h1 className="text-lg tracking-widest">MINSOTO</h1>
-            <span className="text-xs opacity-40">atsu</span>
-          </div>
-
-          <div className="flex items-center gap-6 text-sm">
-            <Link href="/feed" className="opacity-70 hover:opacity-100">GLOBAL FEED</Link>
-            <Link href="/community" className="opacity-70 hover:opacity-100">COMMUNITY</Link>
-            <Link href="/circles" className="opacity-70 hover:opacity-100">CIRCLES</Link>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <button className="w-8 h-8 rounded-full bg-white bg-opacity-10" />
-            <button className="opacity-70 hover:opacity-100">🔔</button>
-            <button className="opacity-70 hover:opacity-100">⋯</button>
-          </div>
-        </div>
-      </nav>
+      <Navigation />
 
       {/* Main Content */}
-      <div className="flex h-[calc(100vh-73px)]">
+      <div className="flex h-[calc(100vh-65px)]">
         {/* Sidebar */}
         <ProfileSidebar
           user={profile.user}
