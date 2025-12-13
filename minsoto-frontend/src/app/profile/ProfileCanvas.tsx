@@ -8,6 +8,7 @@ import TasksWidget from '../../components/widgets/TasksWidget';
 import HabitStreakWidget from '../../components/widgets/HabitStreakWidget';
 import HabitGraphWidget from '../../components/widgets/HabitGraphWidget';
 import InterestsWidget from '../../components/widgets/InterestsWidget';
+import ImageWidget from '../../components/widgets/ImageWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -63,9 +64,17 @@ export default function ProfileCanvas({
 
     switch (widget.type) {
       case 'tasks': return <TasksWidget {...commonProps} tasks={widgetData.tasks || []} />;
-      case 'habit-streak': return <HabitStreakWidget {...commonProps} habits={widgetData.habits || []} currentStreak={12} longestStreak={38} />;
+      case 'habit-streak': {
+        const habits = widgetData.habits || [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const maxCurrent = Math.max(0, ...habits.map((h: any) => h.current_streak || 0));
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const maxLongest = Math.max(0, ...habits.map((h: any) => h.longest_streak || 0));
+        return <HabitStreakWidget {...commonProps} habits={habits} currentStreak={maxCurrent} longestStreak={maxLongest} />;
+      }
       case 'habit-graph': return <HabitGraphWidget {...commonProps} />;
       case 'interests': return <InterestsWidget {...commonProps} interests={widgetData.interests || []} />;
+      case 'image': return <ImageWidget {...commonProps} config={widget.config || {}} />;
       default: return null;
     }
   };

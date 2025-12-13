@@ -7,6 +7,7 @@ interface Habit {
   id: string;
   name: string;
   completed_today?: boolean;
+  image_url?: string;
 }
 
 interface HabitStreakWidgetProps {
@@ -69,6 +70,10 @@ export default function HabitStreakWidget({
               key={habit.id}
               className="flex items-center gap-2 text-sm"
             >
+              {habit.image_url && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={habit.image_url} alt="" className="w-6 h-6 rounded-full object-cover mr-1" />
+              )}
               {habit.completed_today ? (
                 <CheckCircle size={12} className="opacity-70" />
               ) : (

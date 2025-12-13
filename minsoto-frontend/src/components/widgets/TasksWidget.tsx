@@ -8,6 +8,7 @@ interface Task {
   title: string;
   status: 'todo' | 'in_progress' | 'completed';
   priority?: string;
+  image_url?: string;
 }
 
 interface TasksWidgetProps {
@@ -58,24 +59,34 @@ export default function TasksWidget({
           {tasks.slice(0, 6).map((task) => (
             <div
               key={task.id}
-              className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${task.status === 'completed'
+              className={`flex flex-col gap-2 p-3 rounded-lg transition-colors ${task.status === 'completed'
                 ? 'opacity-40 bg-transparent'
                 : 'bg-white/5 border border-white/5'
                 }`}
             >
-              {task.status === 'completed' ? (
-                <CheckCircle size={14} className="text-green-500" />
-              ) : (
-                <Circle size={14} className="text-white/20" />
+              {/* Task Image Cover */}
+              {task.image_url && (
+                <div className="relative w-full h-24 rounded-md overflow-hidden mb-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={task.image_url} alt="Task cover" className="absolute inset-0 w-full h-full object-cover" />
+                </div>
               )}
 
-              <span className={`text-xs flex-1 truncate ${task.status === 'completed' ? 'line-through' : 'text-white/90'}`}>
-                {task.title}
-              </span>
+              <div className="flex items-center gap-3">
+                {task.status === 'completed' ? (
+                  <CheckCircle size={14} className="text-green-500 flex-shrink-0" />
+                ) : (
+                  <Circle size={14} className="text-white/20 flex-shrink-0" />
+                )}
 
-              {task.priority === 'high' && (
-                <AlertCircle size={12} className="text-red-400" />
-              )}
+                <span className={`text-xs flex-1 truncate ${task.status === 'completed' ? 'line-through' : 'text-white/90'}`}>
+                  {task.title}
+                </span>
+
+                {task.priority === 'high' && (
+                  <AlertCircle size={12} className="text-red-400 flex-shrink-0" />
+                )}
+              </div>
             </div>
           ))}
 

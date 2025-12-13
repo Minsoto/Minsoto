@@ -11,6 +11,7 @@ import TasksWidget from '../../components/widgets/TasksWidget';
 import HabitStreakWidget from '../../components/widgets/HabitStreakWidget';
 import HabitGraphWidget from '../../components/widgets/HabitGraphWidget';
 import InterestsWidget from '../../components/widgets/InterestsWidget';
+import ImageWidget from '../../components/widgets/ImageWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -84,6 +85,13 @@ export default function LayoutEditorModal({
         ));
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleConfigUpdate = (widgetId: string, newConfig: any) => {
+        setLocalWidgets(prev => prev.map(w =>
+            w.id === widgetId ? { ...w, config: newConfig } : w
+        ));
+    };
+
     const handleSave = async () => {
         setSaving(true);
         await onSave(localWidgets);
@@ -110,17 +118,25 @@ export default function LayoutEditorModal({
             onDelete: () => handleRemoveWidget(widget.id),
             onVisibilityToggle: () => handleToggleVisibility(widget.id),
             // Pass dummy data for preview
-            ...widgetData,
             tasks: widgetData.tasks || [],
             habits: widgetData.habits || [],
-            interests: widgetData.interests || []
+            interests: widgetData.interests || [],
+            config: widget.config || {},
+            onUpdateConfig: handleConfigUpdate
         };
 
         switch (widget.type) {
             case 'tasks': return <TasksWidget {...props} />;
-            case 'habit-streak': return <HabitStreakWidget {...props} currentStreak={12} longestStreak={30} />;
+            case 'habit-streak': {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const maxCurrent = Math.max(0, ...props.habits.map((h: any) => h.current_streak || 0));
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const maxLongest = Math.max(0, ...props.habits.map((h: any) => h.longest_streak || 0));
+                return <HabitStreakWidget {...props} currentStreak={maxCurrent} longestStreak={maxLongest} />;
+            }
             case 'habit-graph': return <HabitGraphWidget {...props} />;
             case 'interests': return <InterestsWidget {...props} />;
+            case 'image': return <ImageWidget {...props} config={widget.config || {}} onUpdateConfig={handleConfigUpdate} />;
             default: return <div className="border border-red-500 p-2 text-xs">Unknown</div>;
         }
     };

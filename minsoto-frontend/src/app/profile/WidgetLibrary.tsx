@@ -46,6 +46,13 @@ const WIDGET_TEMPLATES: WidgetTemplate[] = [
     description: 'Display your interests',
     defaultSize: { w: 1, h: 1 },
     icon: '🏷️'
+  },
+  {
+    type: 'image',
+    name: 'Image Frame',
+    description: 'Display an image with caption',
+    defaultSize: { w: 2, h: 2 },
+    icon: '🖼️'
   }
 ];
 

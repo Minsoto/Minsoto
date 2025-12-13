@@ -46,7 +46,9 @@ export default function QuickActions() {
     const [taskModalOpen, setTaskModalOpen] = useState(false);
     const [habitModalOpen, setHabitModalOpen] = useState(false);
     const [taskTitle, setTaskTitle] = useState('');
+    const [taskImageUrl, setTaskImageUrl] = useState('');
     const [habitName, setHabitName] = useState('');
+    const [habitImageUrl, setHabitImageUrl] = useState('');
     const [loading, setLoading] = useState(false);
 
     const { fetchFocus, fetchStats } = useDashboardStore();
@@ -57,8 +59,9 @@ export default function QuickActions() {
 
         setLoading(true);
         try {
-            await api.post('/tasks/', { title: taskTitle, status: 'todo' });
+            await api.post('/tasks/', { title: taskTitle, status: 'todo', image_url: taskImageUrl });
             setTaskTitle('');
+            setTaskImageUrl('');
             setTaskModalOpen(false);
             await Promise.all([fetchFocus(), fetchStats()]);
         } catch (error) {
@@ -74,8 +77,9 @@ export default function QuickActions() {
 
         setLoading(true);
         try {
-            await api.post('/habits/', { name: habitName });
+            await api.post('/habits/', { name: habitName, image_url: habitImageUrl });
             setHabitName('');
+            setHabitImageUrl('');
             setHabitModalOpen(false);
             await Promise.all([fetchFocus(), fetchStats()]);
         } catch (error) {
@@ -150,6 +154,13 @@ export default function QuickActions() {
                                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-blue-500/50 outline-none text-white placeholder-white/20 transition-colors"
                                 autoFocus
                             />
+                            <input
+                                type="text"
+                                value={taskImageUrl}
+                                onChange={(e) => setTaskImageUrl(e.target.value)}
+                                placeholder="Image URL (optional)"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl focus:border-blue-500/50 outline-none text-sm text-white placeholder-white/20 transition-colors"
+                            />
                             <div className="flex gap-3 justify-end pt-2">
                                 <button
                                     type="button"
@@ -180,6 +191,13 @@ export default function QuickActions() {
                                 placeholder="E.g., Meditation, Reading..."
                                 className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-purple-500/50 outline-none text-white placeholder-white/20 transition-colors"
                                 autoFocus
+                            />
+                            <input
+                                type="text"
+                                value={habitImageUrl}
+                                onChange={(e) => setHabitImageUrl(e.target.value)}
+                                placeholder="Icon/Image URL (optional)"
+                                className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl focus:border-purple-500/50 outline-none text-sm text-white placeholder-white/20 transition-colors"
                             />
                             <div className="flex gap-3 justify-end pt-2">
                                 <button

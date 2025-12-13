@@ -13,7 +13,7 @@ class HabitStreakSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = HabitStreak
-        fields = ['id', 'name', 'description', 'current_streak', 'longest_streak', 
+        fields = ['id', 'name', 'description', 'current_streak', 'longest_streak', 'image_url',
                   'is_public', 'created_at', 'updated_at', 'recent_logs']
         read_only_fields = ('id', 'created_at', 'updated_at')
     
@@ -26,7 +26,7 @@ class HabitStreakSerializer(serializers.ModelSerializer):
 class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
-        fields = ['id', 'title', 'description', 'status', 'priority', 'due_date', 
+        fields = ['id', 'title', 'description', 'status', 'priority', 'due_date', 'image_url',
                   'is_public', 'created_at', 'updated_at']
         read_only_fields = ('id', 'created_at', 'updated_at')
 

@@ -12,9 +12,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-title: "Minsoto",
+export const metadata: Metadata = {
+  title: "Minsoto",
   description: "Community Without Chaos",
-    manifest: "/manifest.json",
+  manifest: "/manifest.json",
 };
 
 export default function RootLayout({

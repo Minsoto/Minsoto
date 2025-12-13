@@ -23,6 +23,7 @@ class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='profile')
     bio = models.TextField(max_length=500, blank=True)
     profile_picture_url = models.URLField(blank=True)
+    banner_url = models.TextField(blank=True, null=True)
     theme = models.CharField(max_length=50, default='dark')
     layout = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)

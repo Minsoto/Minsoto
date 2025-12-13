@@ -46,6 +46,8 @@ export default function SettingsPage() {
             }
             setIsEditingUsername(false);
             setNewUsername('');
+            setNewUsername('');
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error('Failed to change username:', error);
             const data = error.response?.data;

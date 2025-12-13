@@ -77,6 +77,18 @@ export default function ProfilePage() {
     }
   };
 
+  const handleUpdateBanner = async (url: string) => {
+    try {
+      await api.patch('/profile/me/', { banner_url: url });
+      setProfileData(prev => prev ? {
+        ...prev,
+        profile: { ...prev.profile, banner_url: url }
+      } : null);
+    } catch (error) {
+      console.error('Failed to update banner:', error);
+    }
+  };
+
   if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white"><div className="animate-spin w-8 h-8 border-2 border-cyan-500 rounded-full border-t-transparent" /></div>;
   if (!profileData) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Profile not found</div>;
 
@@ -94,6 +106,8 @@ export default function ProfilePage() {
           interests={profile.interests}
           isOwner={is_owner}
           onOpenEditor={() => setIsEditorOpen(true)}
+          bannerUrl={profile.banner_url}
+          onUpdateBanner={handleUpdateBanner}
         />
 
         {/* Main Canvas View */}
