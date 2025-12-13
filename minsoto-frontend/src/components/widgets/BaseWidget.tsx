@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Lock, Eye, Trash2, GripVertical, Maximize2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { GripVertical, Eye, Lock, Trash2 } from 'lucide-react';
 
 interface BaseWidgetProps {
   id: string;
@@ -14,11 +13,11 @@ interface BaseWidgetProps {
   onVisibilityToggle?: () => void;
   onDelete?: () => void;
   className?: string;
-  accent?: 'purple' | 'green' | 'blue' | 'orange';
 }
 
 export default function BaseWidget({
-  id: _id,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  id,
   title,
   children,
   visibility,
@@ -26,88 +25,76 @@ export default function BaseWidget({
   isOwner,
   onVisibilityToggle,
   onDelete,
-  className = '',
-  accent = 'purple'
+  className = ''
 }: BaseWidgetProps) {
   const [isHovered, setIsHovered] = useState(false);
-
   const isPrivate = visibility === 'private';
 
-  const accentColors = {
-    purple: 'from-purple-500/20 to-purple-900/10 border-purple-500/30',
-    green: 'from-green-500/20 to-green-900/10 border-green-500/30',
-    blue: 'from-blue-500/20 to-blue-900/10 border-blue-500/30',
-    orange: 'from-orange-500/20 to-orange-900/10 border-orange-500/30'
-  };
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={`
-        relative h-full rounded-2xl p-5 overflow-hidden
-        bg-gradient-to-br ${accentColors[accent]}
-        backdrop-blur-xl border
-        ${isEditMode && isOwner ? 'cursor-move ring-2 ring-purple-500/20' : ''}
-        hover:border-purple-500/50 transition-all duration-300
-        ${className}
-      `}
+    <div
+      className={`glass-panel rounded-2xl h-full flex flex-col relative overflow-hidden group transition-all duration-300 ${className} ${isEditMode ? 'hover:border-blue-500/50 hover:shadow-[0_0_20px_rgba(59,130,246,0.1)]' : ''}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Subtle glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent pointer-events-none" />
 
-      {/* Edit Mode Controls */}
-      {isEditMode && isOwner && isHovered && (
-        <div className="absolute top-3 right-3 flex gap-1.5 z-10">
-          <button
-            onClick={onVisibilityToggle}
-            className="p-1.5 bg-black/50 rounded-lg border border-white/10 hover:bg-purple-500/20 transition-colors"
-            title={isPrivate ? 'Make Public' : 'Make Private'}
-          >
-            {isPrivate ? <Lock size={12} /> : <Eye size={12} />}
-          </button>
-          <button
-            onClick={onDelete}
-            className="p-1.5 bg-black/50 rounded-lg border border-white/10 hover:bg-red-500/20 transition-colors"
-            title="Delete Widget"
-          >
-            <Trash2 size={12} />
-          </button>
-        </div>
-      )}
+      {/* HEADER */}
+      <div className="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+        <h3 className="text-xs font-bold tracking-widest text-white/40 uppercase truncate pr-4">
+          {title}
+        </h3>
 
-      {/* Drag Handle */}
-      {isEditMode && isOwner && (
-        <div className="absolute top-3 left-3 cursor-move opacity-50 hover:opacity-100 transition-opacity">
-          <GripVertical size={14} />
-        </div>
-      )}
-
-      {/* Widget Header */}
-      <div className="flex items-center justify-between mb-4">
+        {/* Indicators */}
         <div className="flex items-center gap-2">
-          <h3 className="text-xs font-medium tracking-wider text-white/60 uppercase">
-            {title}
-          </h3>
-          {isPrivate && isOwner && (
-            <Lock size={10} className="text-purple-400/60" />
+          {isPrivate && (
+            <Lock size={12} className="text-white/20" />
           )}
         </div>
-        {!isEditMode && (
-          <button className="opacity-0 group-hover:opacity-100 p-1 hover:bg-white/5 rounded transition-all">
-            <Maximize2 size={12} className="text-white/40" />
-          </button>
-        )}
       </div>
 
-      {/* Widget Content */}
-      <div className="text-white h-[calc(100%-2.5rem)] relative z-10">
+      {/* CONTENT */}
+      <div className="flex-1 p-5 overflow-hidden">
         {children}
       </div>
-    </motion.div>
+
+      {/* EDIT OVERLAY */}
+      {isEditMode && isOwner && (
+        <div className={`absolute inset-0 bg-black/40 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center gap-3 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="absolute top-3 left-3 cursor-move p-2 bg-white/10 rounded-lg hover:bg-white/20">
+            <GripVertical size={16} className="text-white" />
+          </div>
+
+          <div className="flex gap-2 scale-110">
+            <button
+              onClick={(e) => { e.stopPropagation(); onVisibilityToggle?.(); }}
+              className={`p-2 rounded-lg transition-colors border ${isPrivate
+                ? 'bg-red-500/20 border-red-500/50 text-red-200 hover:bg-red-500/30'
+                : 'bg-green-500/20 border-green-500/50 text-green-200 hover:bg-green-500/30'
+                }`}
+              title={isPrivate ? 'Currently Private (Hidden)' : 'Currently Public (Visible)'}
+            >
+              {isPrivate ? <Lock size={16} /> : <Eye size={16} />}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
+              className="p-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-red-500/20 hover:border-red-500/50 hover:text-red-200 transition-colors"
+              title="Delete Widget"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+
+          <p className="text-xs font-mono text-white/50 mt-2 bg-black/50 px-2 py-1 rounded">
+            click & drag to move
+          </p>
+        </div>
+      )}
+
+      {/* Visibility Tint for Owner when not editing */}
+      {!isEditMode && isOwner && isPrivate && (
+        <div className="absolute top-2 right-2">
+          <div className="w-1.5 h-1.5 rounded-full bg-red-500/50" title="Private Widget" />
+        </div>
+      )}
+    </div>
   );
 }
-

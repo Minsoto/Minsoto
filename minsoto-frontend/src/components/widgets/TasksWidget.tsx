@@ -1,13 +1,13 @@
 'use client';
 
 import BaseWidget from './BaseWidget';
-import { CheckCircle, Circle } from 'lucide-react';
+import { Circle, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface Task {
   id: string;
   title: string;
   status: 'todo' | 'in_progress' | 'completed';
-  priority?: 'low' | 'medium' | 'high';
+  priority?: string;
 }
 
 interface TasksWidgetProps {
@@ -15,9 +15,9 @@ interface TasksWidgetProps {
   visibility: 'public' | 'private';
   isEditMode: boolean;
   isOwner: boolean;
-  tasks: Task[];
   onVisibilityToggle?: () => void;
   onDelete?: () => void;
+  tasks: Task[];
 }
 
 export default function TasksWidget({
@@ -25,99 +25,63 @@ export default function TasksWidget({
   visibility,
   isEditMode,
   isOwner,
-  tasks,
   onVisibilityToggle,
-  onDelete
+  onDelete,
+  tasks
 }: TasksWidgetProps) {
-  const categorizedTasks = {
-    todo: tasks.filter(t => t.status === 'todo'),
-    in_progress: tasks.filter(t => t.status === 'in_progress'),
-    completed: tasks.filter(t => t.status === 'completed')
-  };
-
-  const totalTasks = tasks.length;
-  const completedCount = categorizedTasks.completed.length;
-
-  const priorityColors = {
-    high: 'border-l-red-500',
-    medium: 'border-l-yellow-500',
-    low: 'border-l-green-500'
-  };
+  const todoTasks = tasks.filter(t => t.status === 'todo');
+  const completedTasks = tasks.filter(t => t.status === 'completed');
 
   return (
     <BaseWidget
       id={id}
-      title="Tasks & Projects"
+      title="Active Tasks"
       visibility={visibility}
       isEditMode={isEditMode}
       isOwner={isOwner}
       onVisibilityToggle={onVisibilityToggle}
       onDelete={onDelete}
-      accent="orange"
     >
       <div className="h-full flex flex-col">
-        {/* Progress Summary */}
-        <div className="flex items-center gap-3 mb-4 pb-3 border-b border-white/10">
-          <div className="text-2xl font-light">{completedCount}/{totalTasks}</div>
-          <div className="text-xs text-white/50">completed</div>
+        {/* Badge Summary */}
+        <div className="flex gap-2 mb-4">
+          <span className="px-2 py-0.5 rounded text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20">
+            {todoTasks.length} To Do
+          </span>
+          <span className="px-2 py-0.5 rounded text-[10px] bg-white/5 text-white/50 border border-white/10">
+            {completedTasks.length} Done
+          </span>
         </div>
 
-        {/* Task Columns */}
-        <div className="grid grid-cols-3 gap-2 flex-1 overflow-hidden">
-          {/* To Do */}
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-white/40 mb-2 flex items-center gap-1">
-              <Circle size={8} />
-              To Do ({categorizedTasks.todo.length})
-            </div>
-            <div className="space-y-1.5">
-              {categorizedTasks.todo.slice(0, 3).map(task => (
-                <div
-                  key={task.id}
-                  className={`text-xs py-1.5 px-2 bg-white/5 rounded border-l-2 ${task.priority ? priorityColors[task.priority] : 'border-l-white/20'
-                    } truncate`}
-                >
-                  {task.title}
-                </div>
-              ))}
-            </div>
-          </div>
+        {/* Task list */}
+        <div className="space-y-2 overflow-auto flex-1 custom-scrollbar pr-1">
+          {tasks.slice(0, 6).map((task) => (
+            <div
+              key={task.id}
+              className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${task.status === 'completed'
+                ? 'opacity-40 bg-transparent'
+                : 'bg-white/5 border border-white/5'
+                }`}
+            >
+              {task.status === 'completed' ? (
+                <CheckCircle size={14} className="text-green-500" />
+              ) : (
+                <Circle size={14} className="text-white/20" />
+              )}
 
-          {/* In Progress */}
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-orange-400/70 mb-2 flex items-center gap-1">
-              <Circle size={8} className="animate-pulse" />
-              Active ({categorizedTasks.in_progress.length})
-            </div>
-            <div className="space-y-1.5">
-              {categorizedTasks.in_progress.slice(0, 3).map(task => (
-                <div
-                  key={task.id}
-                  className={`text-xs py-1.5 px-2 bg-orange-500/10 rounded border-l-2 border-l-orange-500 truncate`}
-                >
-                  {task.title}
-                </div>
-              ))}
-            </div>
-          </div>
+              <span className={`text-xs flex-1 truncate ${task.status === 'completed' ? 'line-through' : 'text-white/90'}`}>
+                {task.title}
+              </span>
 
-          {/* Completed */}
-          <div>
-            <div className="text-[10px] uppercase tracking-wider text-green-400/70 mb-2 flex items-center gap-1">
-              <CheckCircle size={8} />
-              Done ({categorizedTasks.completed.length})
+              {task.priority === 'high' && (
+                <AlertCircle size={12} className="text-red-400" />
+              )}
             </div>
-            <div className="space-y-1.5">
-              {categorizedTasks.completed.slice(0, 3).map(task => (
-                <div
-                  key={task.id}
-                  className="text-xs py-1.5 px-2 bg-green-500/10 rounded text-white/50 line-through truncate"
-                >
-                  {task.title}
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
+
+          {tasks.length === 0 && (
+            <div className="text-center py-4 text-xs text-white/20">No tasks found</div>
+          )}
         </div>
       </div>
     </BaseWidget>

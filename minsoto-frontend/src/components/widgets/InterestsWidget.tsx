@@ -7,15 +7,20 @@ interface Interest {
   name: string;
 }
 
+interface Extension {
+  name: string;
+  description: string;
+}
+
 interface InterestsWidgetProps {
   id: string;
   visibility: 'public' | 'private';
   isEditMode: boolean;
   isOwner: boolean;
-  interests: Interest[];
-  extensions?: { name: string; description: string }[];
   onVisibilityToggle?: () => void;
   onDelete?: () => void;
+  interests: Interest[];
+  extensions?: Extension[];
 }
 
 export default function InterestsWidget({
@@ -23,10 +28,10 @@ export default function InterestsWidget({
   visibility,
   isEditMode,
   isOwner,
-  interests,
-  extensions = [],
   onVisibilityToggle,
-  onDelete
+  onDelete,
+  interests,
+  extensions = []
 }: InterestsWidgetProps) {
   return (
     <BaseWidget
@@ -37,35 +42,28 @@ export default function InterestsWidget({
       isOwner={isOwner}
       onVisibilityToggle={onVisibilityToggle}
       onDelete={onDelete}
-      accent="purple"
     >
-      <div className="h-full flex flex-col gap-4 overflow-auto">
-        {/* Interests Tags */}
-        <div className="flex flex-wrap gap-2">
-          {interests.map(interest => (
+      <div className="h-full flex flex-col">
+        {/* Interest tags */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {interests.slice(0, 8).map((interest) => (
             <span
               key={interest.id}
-              className="text-xs px-3 py-1.5 rounded-full bg-purple-500/20 border border-purple-500/30 text-purple-200 hover:bg-purple-500/30 transition-colors cursor-default"
+              className="px-2 py-1 text-xs border border-white/20 opacity-70"
             >
               {interest.name}
             </span>
           ))}
         </div>
 
-        {/* Community Extensions */}
+        {/* Extensions */}
         {extensions.length > 0 && (
-          <div className="pt-3 border-t border-white/10">
-            <div className="text-xs text-white/40 uppercase tracking-wider mb-3">Extensions</div>
+          <div className="mt-auto pt-3 border-t border-white/10">
+            <div className="text-[10px] tracking-wider opacity-40 mb-2">EXTENSIONS</div>
             <div className="space-y-2">
-              {extensions.slice(0, 2).map((ext, index) => (
-                <div key={index} className="flex items-center gap-3 p-2 bg-white/5 rounded-lg border border-white/10">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex items-center justify-center text-xs">
-                    {ext.name[0]}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">{ext.name}</div>
-                    <div className="text-xs text-white/50 truncate">{ext.description}</div>
-                  </div>
+              {extensions.map((ext, i) => (
+                <div key={i} className="text-xs opacity-60">
+                  {ext.name}
                 </div>
               ))}
             </div>

@@ -1,89 +1,82 @@
 'use client';
 
 import { useDashboardStore } from '@/stores/dashboardStore';
-import { Flame, CheckSquare, Target, TrendingUp, Zap } from 'lucide-react';
+import { Flame, CheckSquare, Target, Zap } from 'lucide-react';
 
 export default function StatsWidget() {
     const { stats } = useDashboardStore();
 
     if (!stats) {
         return (
-            <div className="bg-gradient-to-br from-blue-500/10 to-blue-900/5 border border-blue-500/20 rounded-2xl p-6 h-full">
-                <div className="animate-pulse">
-                    <div className="h-4 bg-white/10 rounded w-1/2 mb-6"></div>
-                    <div className="space-y-4">
-                        <div className="h-12 bg-white/10 rounded"></div>
-                        <div className="h-12 bg-white/10 rounded"></div>
-                    </div>
-                </div>
-            </div>
+            <div className="glass-panel rounded-2xl p-6 h-full border border-white/5 bg-white/5 animate-pulse" />
         );
     }
 
     const statItems = [
         {
             icon: Flame,
-            label: 'Current Streak',
+            label: 'Streak',
             value: stats.current_streak,
-            suffix: 'days',
-            gradient: 'from-orange-500 to-red-500'
+            unit: 'days',
+            color: 'text-orange-500',
+            bg: 'bg-orange-500/10'
         },
         {
             icon: CheckSquare,
-            label: 'Tasks Today',
+            label: 'Tasks',
             value: stats.tasks_completed_today,
-            suffix: 'done',
-            gradient: 'from-green-500 to-emerald-500'
+            unit: 'done',
+            color: 'text-blue-500',
+            bg: 'bg-blue-500/10'
         },
         {
             icon: Target,
-            label: 'Habits Today',
+            label: 'Habits',
             value: `${stats.habits_completed_today}/${stats.habits_total_today}`,
-            suffix: '',
-            gradient: 'from-purple-500 to-pink-500'
+            unit: 'goals',
+            color: 'text-green-500',
+            bg: 'bg-green-500/10'
         },
         {
-            icon: TrendingUp,
-            label: 'This Week',
-            value: stats.tasks_completed_week,
-            suffix: 'tasks',
-            gradient: 'from-blue-500 to-cyan-500'
+            icon: Zap,
+            label: 'Focus',
+            value: ((stats.tasks_completed_week / Math.max(stats.tasks_completed_week + 5, 1)) * 100).toFixed(0),
+            unit: '%',
+            color: 'text-purple-500',
+            bg: 'bg-purple-500/10'
         }
     ];
 
     return (
-        <div className="bg-gradient-to-br from-blue-500/10 to-blue-900/5 border border-blue-500/20 rounded-2xl p-6 h-full">
-            <h2 className="text-xs font-medium tracking-wider text-white/60 uppercase mb-5">
-                Your Stats
-            </h2>
+        <div className="glass-panel rounded-2xl p-6 h-full flex flex-col justify-between relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-purple-500/5 z-0" />
 
-            <div className="space-y-4">
-                {statItems.map((item) => (
-                    <div
-                        key={item.label}
-                        className="flex items-center gap-4 p-3 bg-white/5 rounded-xl border border-white/10 hover:border-white/20 transition-colors"
-                    >
-                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${item.gradient} flex items-center justify-center`}>
-                            <item.icon size={18} className="text-white" />
-                        </div>
-                        <div className="flex-1">
-                            <div className="text-xs text-white/50">{item.label}</div>
-                            <div className="text-xl font-light">
-                                {item.value}
-                                {item.suffix && <span className="text-sm text-white/40 ml-1">{item.suffix}</span>}
+            <div className="relative z-10">
+                <h2 className="text-xs font-bold tracking-widest text-white/40 mb-6 uppercase">
+                    Vital Verify
+                </h2>
+
+                <div className="grid grid-cols-2 gap-4">
+                    {statItems.map((item) => (
+                        <div key={item.label} className="flex flex-col gap-1 p-2 rounded-lg hover:bg-white/5 transition-colors">
+                            <div className="flex items-center gap-2 mb-1">
+                                <div className={`p-1.5 rounded-md ${item.bg}`}>
+                                    <item.icon size={12} className={item.color} />
+                                </div>
+                                <span className="text-[10px] uppercase tracking-wider text-white/40">{item.label}</span>
+                            </div>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-xl font-medium text-white">{item.value}</span>
+                                <span className="text-[10px] text-white/30">{item.unit}</span>
                             </div>
                         </div>
-                    </div>
-                ))}
+                    ))}
+                </div>
             </div>
 
-            {/* Longest streak highlight */}
-            <div className="mt-5 pt-4 border-t border-white/10 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Zap size={14} className="text-yellow-400" />
-                    <span className="text-sm text-white/50">Best Streak</span>
-                </div>
-                <span className="text-lg font-light text-orange-400">{stats.longest_streak} days</span>
+            <div className="relative z-10 pt-4 mt-2 border-t border-white/5 flex justify-between items-center text-xs">
+                <span className="text-white/30">Best Streak</span>
+                <span className="text-orange-400 font-mono">{stats.longest_streak} 🔥</span>
             </div>
         </div>
     );

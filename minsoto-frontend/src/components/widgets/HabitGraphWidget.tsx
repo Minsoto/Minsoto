@@ -7,9 +7,9 @@ interface HabitGraphWidgetProps {
   visibility: 'public' | 'private';
   isEditMode: boolean;
   isOwner: boolean;
-  data?: number[]; // Array of activity levels (0-4) for last 12 weeks
   onVisibilityToggle?: () => void;
   onDelete?: () => void;
+  data?: number[];
 }
 
 export default function HabitGraphWidget({
@@ -17,33 +17,16 @@ export default function HabitGraphWidget({
   visibility,
   isEditMode,
   isOwner,
-  data = [],
   onVisibilityToggle,
   onDelete
 }: HabitGraphWidgetProps) {
-  // Generate mock data if none provided (12 weeks * 7 days = 84 days)
-  const graphData = data.length > 0 ? data : Array.from({ length: 84 }, () =>
-    Math.random() > 0.3 ? Math.floor(Math.random() * 5) : 0
+  // Generate sample activity data (7 rows x 12 weeks)
+  const weeks = Array(12).fill(null).map(() =>
+    Array(7).fill(null).map(() => Math.floor(Math.random() * 5))
   );
 
-  // Split into weeks (7 days each)
-  const weeks: number[][] = [];
-  for (let i = 0; i < graphData.length; i += 7) {
-    weeks.push(graphData.slice(i, i + 7));
-  }
-
-  // Calculate stats
-  const totalContributions = graphData.reduce((a, b) => a + (b > 0 ? 1 : 0), 0);
-  const currentStreak = (() => {
-    let streak = 0;
-    for (let i = graphData.length - 1; i >= 0; i--) {
-      if (graphData[i] > 0) streak++;
-      else break;
-    }
-    return streak;
-  })();
-
-  const days = ['', 'M', '', 'W', '', 'F', ''];
+  const totalContributions = weeks.flat().reduce((a, b) => a + b, 0);
+  const dayLabels = ['M', '', 'W', '', 'F', '', ''];
 
   return (
     <BaseWidget
@@ -54,27 +37,22 @@ export default function HabitGraphWidget({
       isOwner={isOwner}
       onVisibilityToggle={onVisibilityToggle}
       onDelete={onDelete}
-      accent="green"
     >
       <div className="h-full flex flex-col">
-        {/* Stats Row */}
-        <div className="flex items-center gap-6 mb-4">
+        {/* Stats row */}
+        <div className="flex gap-6 mb-4 text-xs">
           <div>
-            <span className="text-2xl font-light">{totalContributions}</span>
-            <span className="text-xs text-white/50 ml-1">Total</span>
-          </div>
-          <div>
-            <span className="text-2xl font-light">{currentStreak}</span>
-            <span className="text-xs text-white/50 ml-1">Best</span>
+            <span className="opacity-40">Total: </span>
+            <span>{totalContributions}</span>
           </div>
         </div>
 
-        {/* Graph Grid */}
+        {/* Grid */}
         <div className="flex gap-1 flex-1">
           {/* Day labels */}
-          <div className="flex flex-col justify-around text-[10px] text-white/30 pr-1">
-            {days.map((day, i) => (
-              <span key={i}>{day}</span>
+          <div className="flex flex-col gap-[3px] text-[9px] opacity-30 pr-1">
+            {dayLabels.map((label, i) => (
+              <div key={i} className="h-[12px] flex items-center">{label}</div>
             ))}
           </div>
 
@@ -85,13 +63,12 @@ export default function HabitGraphWidget({
                 {week.map((level, dayIndex) => (
                   <div
                     key={dayIndex}
-                    className={`contrib-cell contrib-${level}`}
+                    className="w-[12px] h-[12px]"
                     style={{
                       background: level === 0
-                        ? 'rgba(34, 197, 94, 0.1)'
-                        : `rgba(34, 197, 94, ${0.2 + level * 0.2})`
+                        ? 'rgba(255, 255, 255, 0.05)'
+                        : `rgba(255, 255, 255, ${0.1 + level * 0.2})`
                     }}
-                    title={`Activity level: ${level}`}
                   />
                 ))}
               </div>
@@ -100,18 +77,14 @@ export default function HabitGraphWidget({
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-end gap-1 mt-3 text-[10px] text-white/40">
+        <div className="flex items-center gap-2 mt-3 text-[10px] opacity-40">
           <span>Less</span>
           <div className="flex gap-[2px]">
             {[0, 1, 2, 3, 4].map(level => (
               <div
                 key={level}
-                className="w-2.5 h-2.5 rounded-sm"
-                style={{
-                  background: level === 0
-                    ? 'rgba(34, 197, 94, 0.1)'
-                    : `rgba(34, 197, 94, ${0.2 + level * 0.2})`
-                }}
+                className="w-[10px] h-[10px]"
+                style={{ background: `rgba(255, 255, 255, ${0.05 + level * 0.2})` }}
               />
             ))}
           </div>

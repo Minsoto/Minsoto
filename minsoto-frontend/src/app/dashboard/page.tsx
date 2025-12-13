@@ -1,80 +1,63 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useDashboardStore } from '@/stores/dashboardStore';
+import { useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import TodaysFocus from '@/components/dashboard/TodaysFocus';
 import QuickActions from '@/components/dashboard/QuickActions';
 import StatsWidget from '@/components/dashboard/StatsWidget';
 
 export default function DashboardPage() {
-    const router = useRouter();
-    const { isAuthenticated, user, _hasHydrated } = useAuthStore();
-    const { fetchDashboard, fetchFocus, fetchStats, loading } = useDashboardStore();
+    const { isAuthenticated, _hasHydrated } = useAuthStore();
+    const { fetchFocus, fetchStats } = useDashboardStore();
 
     useEffect(() => {
-        if (!_hasHydrated) return;
-
-        if (!isAuthenticated) {
-            router.push('/login');
-            return;
+        if (isAuthenticated) {
+            fetchFocus();
+            fetchStats();
         }
+    }, [isAuthenticated, fetchFocus, fetchStats]);
 
-        fetchDashboard();
-        fetchFocus();
-        fetchStats();
-    }, [isAuthenticated, router, _hasHydrated, fetchDashboard, fetchFocus, fetchStats]);
-
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Good morning';
-        if (hour < 17) return 'Good afternoon';
-        return 'Good evening';
-    };
-
-    if (!_hasHydrated || loading) {
-        return (
-            <div className="min-h-screen bg-[#0d0d12] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <div
-                        className="w-12 h-12 border-2 border-purple-500 animate-spin"
-                        style={{ borderRadius: '50% 0 50% 0' }}
-                    />
-                    <span className="text-white/50 text-sm">Loading your dashboard...</span>
-                </div>
-            </div>
-        );
-    }
+    if (!_hasHydrated) return null;
 
     return (
-        <div className="min-h-screen bg-[#0d0d12] text-white">
+        <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30">
             <Navigation />
 
-            <main className="max-w-7xl mx-auto px-6 py-8">
-                {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-light tracking-wide mb-2">
-                        {getGreeting()}, <span className="gradient-text">{user?.first_name || 'there'}</span>
-                    </h1>
-                    <p className="text-white/40">Your private productivity hub</p>
+            <main className="container mx-auto px-4 md:px-6 py-6 pb-20">
+                {/* Header Section */}
+                <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+                            Command Center
+                        </h1>
+                        <p className="text-white/40 text-sm mt-1">Overview of your productivity metrics</p>
+                    </div>
+                    <div className="text-right hidden md:block">
+                        <div className="text-xs font-mono text-cyan-400 opacity-60">SYSTEM STATUS: ONLINE</div>
+                    </div>
                 </div>
 
-                {/* Today's Focus */}
-                <TodaysFocus />
+                {/* Main Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-6 h-auto md:h-[600px]">
 
-                {/* Quick Actions + Stats Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-                    <div className="lg:col-span-2">
-                        <QuickActions />
+                    {/* Left Col - Core Control (Tasks/Habits) */}
+                    <div className="md:col-span-2 lg:col-span-2 h-[500px] md:h-full">
+                        <TodaysFocus />
                     </div>
-                    <div>
-                        <StatsWidget />
+
+                    {/* Right Col - Stats & Actions */}
+                    <div className="md:col-span-2 lg:col-span-2 flex flex-col gap-6 h-full">
+                        <div className="flex-1">
+                            <StatsWidget />
+                        </div>
+                        <div className="flex-1">
+                            <QuickActions />
+                        </div>
                     </div>
                 </div>
             </main>
         </div>
     );
 }
-

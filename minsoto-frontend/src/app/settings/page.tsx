@@ -3,13 +3,20 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/stores/authStore';
+import api from '@/lib/api';
 import Navigation from '@/components/Navigation';
-import { Settings, LogOut, User, Shield, Bell, Palette } from 'lucide-react';
+import { Settings, LogOut, User, Shield, Bell, Palette, Edit2, Check, X } from 'lucide-react';
 
 export default function SettingsPage() {
     const router = useRouter();
-    const { isAuthenticated, user, logout, _hasHydrated } = useAuthStore();
+    const { isAuthenticated, user, logout, updateUser, _hasHydrated } = useAuthStore();
     const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
+
+    // Username editing state
+    const [isEditingUsername, setIsEditingUsername] = useState(false);
+    const [newUsername, setNewUsername] = useState('');
+    const [usernameError, setUsernameError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         if (!_hasHydrated) return;
@@ -23,7 +30,39 @@ export default function SettingsPage() {
         router.push('/login');
     };
 
+    const handleUpdateUsername = async () => {
+        if (!newUsername.trim() || newUsername === user?.username) {
+            setIsEditingUsername(false);
+            return;
+        }
+
+        setLoading(true);
+        setUsernameError('');
+
+        try {
+            await api.post('/user/username/change/', { username: newUsername });
+            if (user) {
+                updateUser({ ...user, username: newUsername });
+            }
+            setIsEditingUsername(false);
+            setNewUsername('');
+        } catch (error: any) {
+            console.error('Failed to change username:', error);
+            const data = error.response?.data;
+            let msg = 'Failed to update username';
+            if (data?.username) {
+                msg = Array.isArray(data.username) ? data.username[0] : data.username;
+            } else if (data?.error) {
+                msg = data.error;
+            }
+            setUsernameError(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     if (!_hasHydrated) {
+        // ... (loading state same as before)
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
                 <div
@@ -58,9 +97,61 @@ export default function SettingsPage() {
                     </h2>
 
                     <div className="space-y-4">
-                        <div className="flex justify-between items-center py-2 border-b border-white/10">
-                            <span className="text-white/60">Username</span>
-                            <span className="text-white">@{user?.username}</span>
+                        <div className="py-2 border-b border-white/10">
+                            <div className="flex justify-between items-center mb-1">
+                                <span className="text-white/60">Username</span>
+                                {isEditingUsername ? (
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={handleUpdateUsername}
+                                            disabled={loading}
+                                            className="p-1 hover:bg-white/10 disabled:opacity-50"
+                                        >
+                                            <Check size={16} className="text-green-500" />
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setIsEditingUsername(false);
+                                                setUsernameError('');
+                                            }}
+                                            className="p-1 hover:bg-white/10"
+                                        >
+                                            <X size={16} className="text-red-500" />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={() => {
+                                            setNewUsername(user?.username || '');
+                                            setIsEditingUsername(true);
+                                        }}
+                                        className="text-white/40 hover:text-white transition-colors flex items-center gap-2 text-xs"
+                                    >
+                                        <Edit2 size={12} />
+                                        EDIT
+                                    </button>
+                                )}
+                            </div>
+
+                            {isEditingUsername ? (
+                                <div className="mt-2">
+                                    <input
+                                        type="text"
+                                        value={newUsername}
+                                        onChange={(e) => setNewUsername(e.target.value)}
+                                        className="w-full bg-white/5 border border-white/20 p-2 text-white outline-none focus:border-white/50 text-sm"
+                                        placeholder="New username"
+                                    />
+                                    <p className="text-[10px] text-white/40 mt-1">
+                                        Note: Can only be changed once every 30 days.
+                                    </p>
+                                    {usernameError && (
+                                        <p className="text-xs text-red-500 mt-1">{usernameError}</p>
+                                    )}
+                                </div>
+                            ) : (
+                                <span className="text-white">@{user?.username}</span>
+                            )}
                         </div>
                         <div className="flex justify-between items-center py-2 border-b border-white/10">
                             <span className="text-white/60">Email</span>
