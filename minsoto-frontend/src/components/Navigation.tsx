@@ -24,6 +24,9 @@ export default function Navigation() {
         </div>
 
         <div className="flex items-center gap-6 text-sm">
+          <Link href="/dashboard" className="opacity-70 hover:opacity-100 transition-opacity">
+            DASHBOARD
+          </Link>
           <Link href="/discover" className="opacity-70 hover:opacity-100 transition-opacity">
             DISCOVER
           </Link>

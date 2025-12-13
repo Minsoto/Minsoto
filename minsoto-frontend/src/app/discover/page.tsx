@@ -10,7 +10,7 @@ import type { DiscoverUser, Organization } from '@/types/connections';
 
 export default function DiscoverPage() {
     const router = useRouter();
-    const { isAuthenticated } = useAuthStore();
+    const { isAuthenticated, _hasHydrated } = useAuthStore();
 
     const [users, setUsers] = useState<DiscoverUser[]>([]);
     const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -44,13 +44,15 @@ export default function DiscoverPage() {
     }, [search, selectedOrg]);
 
     useEffect(() => {
+        if (!_hasHydrated) return;
+
         if (!isAuthenticated) {
             router.push('/login');
             return;
         }
         fetchOrganizations();
         fetchUsers();
-    }, [isAuthenticated, router, fetchOrganizations, fetchUsers]);
+    }, [isAuthenticated, router, fetchOrganizations, fetchUsers, _hasHydrated]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();

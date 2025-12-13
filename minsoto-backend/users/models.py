@@ -352,3 +352,41 @@ def extract_email_domain(email):
     if '@' in email:
         return email.split('@')[1].lower()
     return None
+
+
+# =============================================================================
+# PHASE 2B: Dashboard Model
+# =============================================================================
+
+class Dashboard(models.Model):
+    """
+    Private productivity dashboard separate from public profile.
+    Stores user's personal widget layout and preferences.
+    """
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='dashboard')
+    layout = models.JSONField(default=dict, blank=True)
+    # Layout structure:
+    # {
+    #   "widgets": [
+    #     {"id": "uuid", "type": "tasks", "position": {"x": 0, "y": 0}, "size": {"w": 2, "h": 2}}
+    #   ]
+    # }
+    preferences = models.JSONField(default=dict, blank=True)
+    # Preferences: {"theme": "dark", "showQuickActions": true, "focusMode": false}
+    last_synced = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s Dashboard"
+
+    class Meta:
+        verbose_name_plural = "Dashboards"
+
+
+# Signal to create Dashboard when user is created
+@receiver(post_save, sender=CustomUser)
+def create_user_dashboard(sender, instance, created, **kwargs):
+    if created:
+        Dashboard.objects.get_or_create(user=instance)
+

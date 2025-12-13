@@ -13,7 +13,7 @@ export default function OrganizationPage() {
     const router = useRouter();
     const params = useParams();
     const domain = params.domain as string;
-    const { isAuthenticated, user } = useAuthStore();
+    const { isAuthenticated, user, _hasHydrated } = useAuthStore();
 
     const [organization, setOrganization] = useState<OrganizationDetail | null>(null);
     const [isMember, setIsMember] = useState(false);
@@ -35,12 +35,14 @@ export default function OrganizationPage() {
     }, [domain]);
 
     useEffect(() => {
+        if (!_hasHydrated) return;
+
         if (!isAuthenticated) {
             router.push('/login');
             return;
         }
         fetchOrganization();
-    }, [isAuthenticated, router, fetchOrganization]);
+    }, [isAuthenticated, router, fetchOrganization, _hasHydrated]);
 
     if (loading) {
         return (

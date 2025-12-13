@@ -60,5 +60,13 @@ urlpatterns = [
     # PHASE 2A: User Discovery
     # =========================================================================
     path('discover/', views.discover_users, name='discover_users'),
+    
+    # =========================================================================
+    # PHASE 2B: Dashboard
+    # =========================================================================
+    path('dashboard/', views.dashboard_get, name='dashboard_get'),
+    path('dashboard/layout/', views.dashboard_layout_update, name='dashboard_layout_update'),
+    path('dashboard/focus/', views.dashboard_focus, name='dashboard_focus'),
+    path('dashboard/stats/', views.dashboard_stats, name='dashboard_stats'),
 ]
 

@@ -57,18 +57,14 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [kanjiElements.length]);
 
-  const { isAuthenticated, user } = useAuthStore();
-const router = useRouter();
+  const { isAuthenticated, user, _hasHydrated } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated && user) {
-      if (!user.is_setup_complete) {
-        router.push("/setup-username");
-      } else {
-        router.push(`/profile/${user.username}`);
-      }
+    if (_hasHydrated && isAuthenticated && user) {
+      router.push(`/profile/${user.username}`);
     }
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, router, _hasHydrated]);
 
   return (
     <div
@@ -78,7 +74,7 @@ const router = useRouter();
       {/* === Japanese Minimalist Background === */}
       <div className="fixed inset-0 pointer-events-none">
         {/* Subtle moving gradient that follows mouse */}
-        <div 
+        <div
           className="absolute w-96 h-96 opacity-8 transition-all duration-1000 ease-out"
           style={{
             background: 'radial-gradient(circle, white 0%, transparent 70%)',
@@ -87,9 +83,9 @@ const router = useRouter();
             transform: 'translate(-50%, -50%)'
           }}
         />
-        
+
         {/* Large Kanji Background */}
-        <div 
+        <div
           className="absolute text-[20rem] font-thin opacity-5 transition-all duration-1000 select-none"
           style={{
             right: '10%',
@@ -99,9 +95,9 @@ const router = useRouter();
         >
           {kanjiElements[currentKanji].char}
         </div>
-        
+
         {/* Secondary smaller kanji */}
-        <div 
+        <div
           className="absolute text-6xl font-thin opacity-10 transition-all duration-1000 select-none"
           style={{
             left: '5%',
@@ -111,12 +107,12 @@ const router = useRouter();
         >
           {kanjiElements[(currentKanji + 2) % kanjiElements.length].char}
         </div>
-        
+
         {/* Grid Pattern */}
         <svg className="absolute inset-0 w-full h-full opacity-3">
           <defs>
             <pattern id="landingGrid" width="80" height="80" patternUnits="userSpaceOnUse">
-              <path d="M 80 0 L 0 0 0 80" fill="none" stroke="white" strokeWidth="0.5" opacity="0.1"/>
+              <path d="M 80 0 L 0 0 0 80" fill="none" stroke="white" strokeWidth="0.5" opacity="0.1" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#landingGrid)" />
@@ -175,15 +171,15 @@ const router = useRouter();
                 <div className="h-px bg-white w-12 opacity-20" />
                 <span className="text-sm font-light tracking-widest opacity-60">THE MINDFUL NETWORK</span>
               </div>
-              
+
               <h1 className="text-5xl lg:text-6xl font-thin leading-tight tracking-wide">
                 <span className="block mb-2">Community,</span>
                 <span className="block opacity-80">Without the Chaos</span>
               </h1>
-              
+
               <p className="text-lg font-light opacity-70 leading-relaxed max-w-lg">
-                Where focus meets growth through purposeful connection. 
-                Experience the harmony of minimalist social interaction, 
+                Where focus meets growth through purposeful connection.
+                Experience the harmony of minimalist social interaction,
                 inspired by Japanese principles of mindful simplicity.
               </p>
             </div>
@@ -199,7 +195,7 @@ const router = useRouter();
                 {/* Corner accents */}
                 <div className="absolute top-0 right-0 w-0 h-0 border-t-4 border-r-4 border-t-transparent border-r-white opacity-40 group-hover:border-r-black transition-colors duration-500" />
               </Link>
-              
+
               <Link
                 href="#philosophy"
                 className="group relative px-10 py-4 transition-all duration-500"
@@ -217,12 +213,12 @@ const router = useRouter();
               <div className="text-[12rem] font-thin opacity-10 group-hover:opacity-20 transition-all duration-1000 select-none">
                 {kanjiElements[(currentKanji + 1) % kanjiElements.length].char}
               </div>
-              
+
               {/* Floating elements around the kanji */}
               <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white opacity-20 rounded-full animate-pulse" />
               <div className="absolute bottom-1/3 right-1/4 w-1 h-1 bg-white opacity-30 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
               <div className="absolute top-2/3 left-1/3 w-1.5 h-1.5 bg-white opacity-25 rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
-              
+
               {/* Geometric accents */}
               <div className="absolute top-0 right-0 w-16 h-16 border-t border-r border-white opacity-10 group-hover:opacity-30 transition-opacity duration-1000" />
               <div className="absolute bottom-0 left-0 w-16 h-16 border-b border-l border-white opacity-10 group-hover:opacity-30 transition-opacity duration-1000" />
@@ -239,7 +235,7 @@ const router = useRouter();
             <div className="text-sm opacity-60 mb-8">Mittsu no Michi · Three Paths</div>
             <div className="h-px bg-white opacity-10 w-24 mx-auto" />
           </div>
-          
+
           <div className="grid md:grid-cols-3 gap-12">
             {[
               { kanji: '簡', title: 'Simplicity', subtitle: 'Kan', desc: 'Remove the unnecessary to focus on what truly matters in your digital connections.' },
@@ -258,7 +254,7 @@ const router = useRouter();
                 <p className="text-sm font-light opacity-60 leading-relaxed">
                   {item.desc}
                 </p>
-                
+
                 {/* Corner accent */}
                 <div className="absolute top-0 right-0 w-0 h-0 border-t-6 border-r-6 border-t-transparent border-r-white opacity-0 group-hover:opacity-20 transition-opacity duration-500" />
               </div>
@@ -275,7 +271,7 @@ const router = useRouter();
           <p className="text-lg font-light opacity-70 leading-relaxed">
             One time, one meeting. Treasure every encounter in our mindful digital space.
           </p>
-          
+
           <div className="pt-8">
             <Link
               href="/login"

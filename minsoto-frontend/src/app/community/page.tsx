@@ -10,18 +10,20 @@ import type { Organization } from '@/types/connections';
 
 export default function CommunityPage() {
     const router = useRouter();
-    const { isAuthenticated } = useAuthStore();
+    const { isAuthenticated, _hasHydrated } = useAuthStore();
 
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        if (!_hasHydrated) return;
+
         if (!isAuthenticated) {
             router.push('/login');
             return;
         }
         fetchOrganizations();
-    }, [isAuthenticated, router]);
+    }, [isAuthenticated, router, _hasHydrated]);
 
     const fetchOrganizations = async () => {
         try {

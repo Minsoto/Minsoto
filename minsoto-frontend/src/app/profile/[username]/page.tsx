@@ -86,7 +86,7 @@ interface WidgetTemplate {
 export default function ProfilePage() {
   const params = useParams();
   const router = useRouter();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, _hasHydrated } = useAuthStore();
 
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -117,6 +117,8 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
+    if (!_hasHydrated) return;
+
     if (!isAuthenticated) {
       router.push('/login');
       return;
@@ -124,7 +126,7 @@ export default function ProfilePage() {
 
     fetchProfile();
     fetchWidgetData();
-  }, [username, isAuthenticated, router, fetchProfile, fetchWidgetData]);
+  }, [username, isAuthenticated, router, fetchProfile, fetchWidgetData, _hasHydrated]);
 
   const handleLayoutChange = useCallback(async (updatedWidgets: Widget[]) => {
     if (!profileData?.is_owner) return;
@@ -276,8 +278,8 @@ export default function ProfilePage() {
             <button
               onClick={toggleEditMode}
               className={`w-12 h-12 rounded-full flex items-center justify-center transition-all shadow-lg ${isEditMode
-                  ? 'bg-green-500 text-black'
-                  : 'bg-black border border-white text-white'
+                ? 'bg-green-500 text-black'
+                : 'bg-black border border-white text-white'
                 }`}
               title={isEditMode ? 'Save Layout' : 'Edit Mode'}
             >

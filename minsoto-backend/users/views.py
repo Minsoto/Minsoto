@@ -14,7 +14,7 @@ from django.db.models import Q
 
 from .models import (
     Profile, HabitStreak, Task, UserInterest, Interest, HabitLog,
-    Organization, OrganizationMembership, Connection, extract_email_domain
+    Organization, OrganizationMembership, Connection, Dashboard, extract_email_domain
 )
 from .serializers import (
     GoogleAuthSerializer,
@@ -32,7 +32,10 @@ from .serializers import (
     OrganizationMembershipSerializer,
     ConnectionSerializer,
     ConnectionRequestSerializer,
-    UserMinimalSerializer
+    UserMinimalSerializer,
+    DashboardSerializer,
+    DashboardLayoutUpdateSerializer,
+    DashboardStatsSerializer
 )
 
 User = get_user_model()
@@ -897,3 +900,137 @@ def discover_users(request):
         results.append(user_data)
     
     return Response(results)
+
+
+# =============================================================================
+# PHASE 2B: Dashboard Endpoints
+# =============================================================================
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dashboard_get(request):
+    """Get user's dashboard with layout and widget data"""
+    dashboard, created = Dashboard.objects.get_or_create(user=request.user)
+    
+    # Also fetch widget data for the dashboard
+    tasks = Task.objects.filter(user=request.user).only(
+        'id', 'title', 'status', 'priority', 'due_date'
+    )[:20]
+    habits = HabitStreak.objects.filter(user=request.user).prefetch_related('logs')
+    
+    return Response({
+        'dashboard': DashboardSerializer(dashboard).data,
+        'widget_data': {
+            'tasks': TaskSerializer(tasks, many=True).data,
+            'habits': HabitStreakSerializer(habits, many=True).data,
+        }
+    })
+
+
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def dashboard_layout_update(request):
+    """Update dashboard layout"""
+    dashboard, created = Dashboard.objects.get_or_create(user=request.user)
+    
+    serializer = DashboardLayoutUpdateSerializer(data=request.data)
+    if serializer.is_valid():
+        dashboard.layout = serializer.validated_data['layout']
+        dashboard.save()
+        return Response({
+            'message': 'Dashboard layout saved',
+            'layout': dashboard.layout
+        })
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dashboard_focus(request):
+    """Get today's focus items: tasks due today and habits to complete"""
+    today = timezone.now().date()
+    
+    # Tasks due today or overdue
+    tasks_today = Task.objects.filter(
+        user=request.user,
+        due_date__lte=today,
+        status__in=['todo', 'in_progress']
+    ).order_by('due_date', '-priority')[:10]
+    
+    # Today's habits
+    habits = HabitStreak.objects.filter(user=request.user)
+    habits_data = []
+    for habit in habits:
+        completed_today = HabitLog.objects.filter(
+            habit=habit,
+            date=today,
+            completed=True
+        ).exists()
+        habits_data.append({
+            'id': str(habit.id),
+            'name': habit.name,
+            'completed_today': completed_today,
+            'current_streak': habit.current_streak,
+            'time': habit.time.strftime('%H:%M') if habit.time else None
+        })
+    
+    return Response({
+        'tasks': TaskSerializer(tasks_today, many=True).data,
+        'habits': habits_data,
+        'date': today.isoformat()
+    })
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def dashboard_stats(request):
+    """Get productivity stats for dashboard"""
+    from datetime import timedelta
+    today = timezone.now().date()
+    week_ago = today - timedelta(days=7)
+    
+    # Task stats
+    tasks_completed_today = Task.objects.filter(
+        user=request.user,
+        status='completed',
+        updated_at__date=today
+    ).count()
+    
+    tasks_completed_week = Task.objects.filter(
+        user=request.user,
+        status='completed',
+        updated_at__date__gte=week_ago
+    ).count()
+    
+    total_tasks = Task.objects.filter(user=request.user).count()
+    
+    # Habit stats
+    habits = HabitStreak.objects.filter(user=request.user)
+    total_habits = habits.count()
+    
+    habits_completed_today = HabitLog.objects.filter(
+        habit__user=request.user,
+        date=today,
+        completed=True
+    ).count()
+    
+    # Streak stats
+    current_streak = 0
+    longest_streak = 0
+    if habits.exists():
+        current_streak = max(h.current_streak for h in habits)
+        longest_streak = max(h.longest_streak for h in habits)
+    
+    stats = {
+        'tasks_completed_today': tasks_completed_today,
+        'tasks_completed_week': tasks_completed_week,
+        'habits_completed_today': habits_completed_today,
+        'habits_total_today': total_habits,
+        'current_streak': current_streak,
+        'longest_streak': longest_streak,
+        'total_tasks': total_tasks,
+        'total_habits': total_habits
+    }
+    
+    return Response(stats)

@@ -11,7 +11,7 @@ type TabType = 'all' | 'friends' | 'pending';
 
 export default function ConnectionsPage() {
     const router = useRouter();
-    const { isAuthenticated, user } = useAuthStore();
+    const { isAuthenticated, user, _hasHydrated } = useAuthStore();
     const {
         connections,
         pendingReceived,
@@ -23,13 +23,15 @@ export default function ConnectionsPage() {
     const [activeTab, setActiveTab] = useState<TabType>('all');
 
     useEffect(() => {
+        if (!_hasHydrated) return;
+
         if (!isAuthenticated) {
             router.push('/login');
             return;
         }
         fetchConnections();
         fetchPendingConnections();
-    }, [isAuthenticated, router, fetchConnections, fetchPendingConnections]);
+    }, [isAuthenticated, router, fetchConnections, fetchPendingConnections, _hasHydrated]);
 
     const filteredConnections = activeTab === 'friends'
         ? connections.filter(c => c.connection_type === 'friend')

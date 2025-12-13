@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import (
     Profile, Interest, HabitStreak, Task, UserInterest, HabitLog,
-    Organization, OrganizationMembership, Connection
+    Organization, OrganizationMembership, Connection, Dashboard
 )
 
 User = get_user_model()
@@ -277,3 +277,41 @@ class LayoutUpdateSerializer(serializers.Serializer):
             raise serializers.ValidationError("'widgets' must be an array.")
         return value
 
+
+# =============================================================================
+# PHASE 2B: Dashboard Serializers
+# =============================================================================
+
+class DashboardSerializer(serializers.ModelSerializer):
+    """Serializer for user's private dashboard"""
+    class Meta:
+        model = Dashboard
+        fields = ('id', 'layout', 'preferences', 'last_synced', 'created_at')
+        read_only_fields = ('id', 'last_synced', 'created_at')
+
+
+class DashboardLayoutUpdateSerializer(serializers.Serializer):
+    """Serializer for updating dashboard layout"""
+    layout = serializers.JSONField()
+    
+    def validate_layout(self, value):
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Layout must be a JSON object.")
+        return value
+
+
+class DashboardPreferencesSerializer(serializers.Serializer):
+    """Serializer for dashboard preferences"""
+    preferences = serializers.JSONField()
+
+
+class DashboardStatsSerializer(serializers.Serializer):
+    """Serializer for dashboard productivity stats"""
+    tasks_completed_today = serializers.IntegerField()
+    tasks_completed_week = serializers.IntegerField()
+    habits_completed_today = serializers.IntegerField()
+    habits_total_today = serializers.IntegerField()
+    current_streak = serializers.IntegerField()
+    longest_streak = serializers.IntegerField()
+    total_tasks = serializers.IntegerField()
+    total_habits = serializers.IntegerField()
