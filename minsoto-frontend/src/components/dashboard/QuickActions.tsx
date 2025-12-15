@@ -102,6 +102,11 @@ export default function QuickActions() {
 
     // Goal modal state
     const [goalModalOpen, setGoalModalOpen] = useState(false);
+    const [goalTitle, setGoalTitle] = useState('');
+    const [goalTarget, setGoalTarget] = useState('');
+    const [goalUnit, setGoalUnit] = useState('');
+    const [goalColor, setGoalColor] = useState('cyan');
+    const [goalCategory, setGoalCategory] = useState('general');
 
     const [loading, setLoading] = useState(false);
     const { fetchFocus, fetchStats } = useDashboardStore();
@@ -122,6 +127,15 @@ export default function QuickActions() {
         setHabitColor('blue');
         setHabitImageUrl('');
         setShowHabitIcon(false);
+    };
+
+    // Reset goal form
+    const resetGoalForm = () => {
+        setGoalTitle('');
+        setGoalTarget('');
+        setGoalUnit('');
+        setGoalColor('cyan');
+        setGoalCategory('general');
     };
 
     const handleAddTask = async (e: React.FormEvent) => {
@@ -163,6 +177,29 @@ export default function QuickActions() {
             await Promise.all([fetchFocus(), fetchStats()]);
         } catch (error) {
             console.error('Failed to add habit:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAddGoal = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!goalTitle.trim() || !goalTarget) return;
+
+        setLoading(true);
+        try {
+            await api.post('/goals/', {
+                title: goalTitle,
+                target_value: parseInt(goalTarget),
+                current_value: 0,
+                unit: goalUnit || 'units',
+                color: goalColor,
+                category: goalCategory
+            });
+            resetGoalForm();
+            setGoalModalOpen(false);
+        } catch (error) {
+            console.error('Failed to add goal:', error);
         } finally {
             setLoading(false);
         }
@@ -271,8 +308,8 @@ export default function QuickActions() {
                                             type="button"
                                             onClick={() => setTaskPriority(p.value as 'low' | 'medium' | 'high')}
                                             className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all ${taskPriority === p.value
-                                                    ? `bg-white/10 border-white/30 ${p.ring} ring-2`
-                                                    : 'bg-white/5 border-white/10 hover:bg-white/10'
+                                                ? `bg-white/10 border-white/30 ${p.ring} ring-2`
+                                                : 'bg-white/5 border-white/10 hover:bg-white/10'
                                                 }`}
                                         >
                                             <span className={`w-2 h-2 rounded-full ${p.color}`} />
@@ -357,8 +394,8 @@ export default function QuickActions() {
                                             type="button"
                                             onClick={() => setHabitFrequency(f.value as 'daily' | 'weekly')}
                                             className={`flex-1 px-6 py-3 rounded-xl border transition-all text-sm font-medium ${habitFrequency === f.value
-                                                    ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
-                                                    : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
+                                                ? 'bg-purple-500/20 border-purple-500/50 text-purple-300'
+                                                : 'bg-white/5 border-white/10 text-white/60 hover:bg-white/10'
                                                 }`}
                                         >
                                             {f.label}
@@ -377,8 +414,8 @@ export default function QuickActions() {
                                             type="button"
                                             onClick={() => setHabitColor(c.name)}
                                             className={`w-9 h-9 rounded-lg ${c.bg} transition-all ${habitColor === c.name
-                                                    ? 'ring-2 ring-offset-2 ring-offset-[#0a0a12] ' + c.ring + ' scale-110'
-                                                    : 'opacity-70 hover:opacity-100 hover:scale-105'
+                                                ? 'ring-2 ring-offset-2 ring-offset-[#0a0a12] ' + c.ring + ' scale-110'
+                                                : 'opacity-70 hover:opacity-100 hover:scale-105'
                                                 }`}
                                         />
                                     ))}
@@ -431,24 +468,106 @@ export default function QuickActions() {
             </AnimatePresence>
 
             {/* ================================================================ */}
-            {/* GOAL MODAL (Placeholder) */}
+            {/* GOAL MODAL */}
             {/* ================================================================ */}
             <AnimatePresence>
                 {goalModalOpen && (
-                    <Modal isOpen={goalModalOpen} onClose={() => setGoalModalOpen(false)} title="Set Goal" accentColor="green">
-                        <div className="text-center py-8">
-                            <Target size={48} className="text-green-400 mx-auto mb-4" />
-                            <p className="text-white/60">Goals feature coming soon!</p>
-                            <p className="text-white/40 text-sm mt-2">Track your long-term objectives with progress visualization.</p>
-                        </div>
-                        <div className="flex justify-end pt-2">
-                            <button
-                                onClick={() => setGoalModalOpen(false)}
-                                className="px-5 py-2.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors"
-                            >
-                                Close
-                            </button>
-                        </div>
+                    <Modal isOpen={goalModalOpen} onClose={() => { setGoalModalOpen(false); resetGoalForm(); }} title="Set Goal" accentColor="green">
+                        <form onSubmit={handleAddGoal} className="space-y-5">
+                            {/* Goal Title */}
+                            <div>
+                                <label className="text-xs font-medium text-white/50 mb-2 block">Goal Title</label>
+                                <input
+                                    type="text"
+                                    value={goalTitle}
+                                    onChange={(e) => setGoalTitle(e.target.value)}
+                                    placeholder="Read 20 books..."
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-green-500/50 outline-none text-white placeholder-white/20 transition-colors"
+                                    autoFocus
+                                />
+                            </div>
+
+                            {/* Target Value & Unit */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-medium text-white/50 mb-2 block">Target</label>
+                                    <input
+                                        type="number"
+                                        value={goalTarget}
+                                        onChange={(e) => setGoalTarget(e.target.value)}
+                                        placeholder="20"
+                                        min="1"
+                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-green-500/50 outline-none text-white placeholder-white/20 transition-colors"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="text-xs font-medium text-white/50 mb-2 block">Unit</label>
+                                    <input
+                                        type="text"
+                                        value={goalUnit}
+                                        onChange={(e) => setGoalUnit(e.target.value)}
+                                        placeholder="books, km, hours..."
+                                        className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-green-500/50 outline-none text-white placeholder-white/20 transition-colors"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Color Picker */}
+                            <div>
+                                <label className="text-xs font-medium text-white/50 mb-2 block">Color</label>
+                                <div className="flex gap-2 flex-wrap">
+                                    {['cyan', 'green', 'blue', 'purple', 'pink', 'yellow'].map((c) => (
+                                        <button
+                                            key={c}
+                                            type="button"
+                                            onClick={() => setGoalColor(c)}
+                                            className={`w-7 h-7 rounded-full bg-${c}-500 transition-all ${goalColor === c
+                                                    ? 'ring-2 ring-offset-2 ring-offset-[#0a0a12] ring-white scale-110'
+                                                    : 'opacity-60 hover:opacity-100'
+                                                }`}
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Category */}
+                            <div>
+                                <label className="text-xs font-medium text-white/50 mb-2 block">Category</label>
+                                <div className="flex gap-2 flex-wrap">
+                                    {['general', 'health', 'career', 'learning', 'finance'].map((cat) => (
+                                        <button
+                                            key={cat}
+                                            type="button"
+                                            onClick={() => setGoalCategory(cat)}
+                                            className={`px-3 py-1.5 rounded-lg text-xs transition-all ${goalCategory === cat
+                                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                    : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10'
+                                                }`}
+                                        >
+                                            {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-3 justify-end pt-3">
+                                <button
+                                    type="button"
+                                    onClick={() => { setGoalModalOpen(false); resetGoalForm(); }}
+                                    className="px-5 py-2.5 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={loading || !goalTitle.trim() || !goalTarget}
+                                    className="px-8 py-2.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-sm font-semibold transition-all shadow-lg shadow-green-500/30 hover:shadow-green-500/50"
+                                >
+                                    {loading ? 'Creating...' : 'Set Goal'}
+                                </button>
+                            </div>
+                        </form>
                     </Modal>
                 )}
             </AnimatePresence>

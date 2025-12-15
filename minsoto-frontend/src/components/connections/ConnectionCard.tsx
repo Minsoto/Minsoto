@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { useConnectionsStore } from '@/stores/connectionsStore';
 import { useAuthStore } from '@/stores/authStore';
+import StatusBadge from '@/components/StatusBadge';
 import type { Connection } from '@/types/connections';
 
 interface ConnectionCardProps {
@@ -70,20 +71,26 @@ export default function ConnectionCard({
             {/* User Info */}
             <div className="flex items-center gap-4">
                 {/* Avatar */}
-                <div className="w-12 h-12 border border-white/20 flex items-center justify-center text-lg font-light">
-                    {otherUser.profile_picture_url ? (
-                        <Image
-                            src={otherUser.profile_picture_url}
-                            alt={otherUser.username}
-                            width={48}
-                            height={48}
-                            className="w-full h-full object-cover"
-                        />
-                    ) : (
-                        <span className="text-white/50">
-                            {otherUser.first_name?.[0] || otherUser.username[0].toUpperCase()}
-                        </span>
-                    )}
+                <div className="relative">
+                    <div className="w-12 h-12 border border-white/20 flex items-center justify-center text-lg font-light overflow-hidden">
+                        {otherUser.profile_picture_url ? (
+                            <Image
+                                src={otherUser.profile_picture_url}
+                                alt={otherUser.username}
+                                width={48}
+                                height={48}
+                                className="w-full h-full object-cover"
+                            />
+                        ) : (
+                            <span className="text-white/50">
+                                {otherUser.first_name?.[0] || otherUser.username[0].toUpperCase()}
+                            </span>
+                        )}
+                    </div>
+                    {/* Status Badge */}
+                    <div className="absolute -bottom-0.5 -right-0.5">
+                        <StatusBadge status={(otherUser as { status?: 'online' | 'idle' | 'focus' | 'dnd' | 'offline' }).status || 'offline'} size="sm" />
+                    </div>
                 </div>
 
                 {/* Name & Username */}
@@ -95,6 +102,11 @@ export default function ConnectionCard({
                         {otherUser.first_name} {otherUser.last_name}
                     </a>
                     <p className="text-white/50 text-sm">@{otherUser.username}</p>
+                    {(otherUser as { status_message?: string }).status_message && (
+                        <p className="text-white/40 text-xs italic truncate max-w-[150px]">
+                            {(otherUser as { status_message?: string }).status_message}
+                        </p>
+                    )}
                 </div>
 
                 {/* Friend Badge */}

@@ -124,6 +124,7 @@ class Goal(models.Model):
     E.g., "Read 24 books", "Run 500km", "Save $10,000"
     """
     CATEGORY_CHOICES = [
+        ('general', 'General'),
         ('health', 'Health'),
         ('career', 'Career'),
         ('learning', 'Learning'),
@@ -149,7 +150,7 @@ class Goal(models.Model):
     current_value = models.FloatField(default=0)
     unit = models.CharField(max_length=50, blank=True)  # "books", "km", "$"
     deadline = models.DateField(null=True, blank=True)
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='personal')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='general')
     color = models.CharField(max_length=20, choices=COLOR_CHOICES, default='cyan')
     is_completed = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)

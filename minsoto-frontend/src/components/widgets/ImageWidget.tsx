@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import BaseWidget from './BaseWidget';
-import { Edit2, Check, X } from 'lucide-react';
+import { Edit2, Check, X, AlertTriangle } from 'lucide-react';
 
 interface ImageWidgetProps {
     id: string;
@@ -32,13 +32,46 @@ export default function ImageWidget({
     const [url, setUrl] = useState(config.url || '');
     const [caption, setCaption] = useState(config.caption || '');
     const [mode, setMode] = useState<'cover' | 'contain'>(config.mode || 'cover');
+    const [imageError, setImageError] = useState(false);
 
     const handleSave = () => {
+        // Validate URL format
+        if (url && !isValidImageUrl(url)) {
+            alert('Unsupported link. Please use a valid image URL (jpg, png, gif, webp, svg).');
+            return;
+        }
+        setImageError(false);
         onUpdateConfig?.(id, { ...config, url, caption, mode });
         setIsEditing(false);
     };
 
-    const hasImage = !!config.url;
+    const isValidImageUrl = (urlString: string): boolean => {
+        try {
+            const urlObj = new URL(urlString);
+            const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
+            const hasValidExtension = validExtensions.some(ext =>
+                urlObj.pathname.toLowerCase().endsWith(ext)
+            );
+            // Also allow URLs that look like image services (imgur, cloudinary, etc.)
+            const isImageService = urlString.includes('imgur.com') ||
+                urlString.includes('cloudinary.com') ||
+                urlString.includes('unsplash.com') ||
+                urlString.includes('pexels.com') ||
+                urlString.includes('giphy.com') ||
+                urlString.includes('tenor.com') ||
+                urlString.includes('googleusercontent.com') ||
+                urlString.includes('githubusercontent.com');
+            return hasValidExtension || isImageService || urlObj.protocol === 'data:';
+        } catch {
+            return false;
+        }
+    };
+
+    const handleImageError = () => {
+        setImageError(true);
+    };
+
+    const hasImage = !!config.url && !imageError;
 
     return (
         <BaseWidget
@@ -56,14 +89,41 @@ export default function ImageWidget({
                 {/* VIEW MODE */}
                 {!isEditing && (
                     <>
-                        {config.url ? (
+                        {imageError ? (
+                            <div className="text-center p-4">
+                                <AlertTriangle size={32} className="text-red-400 mx-auto mb-2" />
+                                <p className="text-red-400 text-sm font-medium">Unsupported Link</p>
+                                <p className="text-white/40 text-xs mt-1">This image couldn&apos;t be loaded</p>
+                                {isOwner && (
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="mt-3 text-blue-400 text-xs hover:underline"
+                                    >
+                                        Change Image
+                                    </button>
+                                )}
+                            </div>
+                        ) : config.url ? (
                             <div className="relative w-full h-full">
-                                <Image
-                                    src={config.url}
-                                    alt={config.caption || "Widget Image"}
-                                    fill
-                                    className={`object-${config.mode || 'cover'}`}
-                                />
+                                {/* Use regular img for GIFs to preserve animation */}
+                                {config.url.toLowerCase().endsWith('.gif') ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img
+                                        src={config.url}
+                                        alt={config.caption || "Widget Image"}
+                                        className={`w-full h-full object-${config.mode || 'cover'}`}
+                                        onError={handleImageError}
+                                    />
+                                ) : (
+                                    <Image
+                                        src={config.url}
+                                        alt={config.caption || "Widget Image"}
+                                        fill
+                                        className={`object-${config.mode || 'cover'}`}
+                                        unoptimized={config.url.includes('.gif')}
+                                        onError={handleImageError}
+                                    />
+                                )}
                                 {/* Optional overlay caption */}
                                 {config.caption && (
                                     <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
@@ -116,9 +176,10 @@ export default function ImageWidget({
                                 type="text"
                                 value={url}
                                 onChange={(e) => setUrl(e.target.value)}
-                                placeholder="https://..."
+                                placeholder="https://... (.jpg, .png, .gif, .webp)"
                                 className="w-full bg-white/5 border border-white/10 rounded px-2 py-1 text-xs text-white focus:border-blue-500/50 outline-none"
                             />
+                            <p className="text-[10px] text-white/30">Supported: jpg, png, gif, webp, svg</p>
                         </div>
 
                         <div className="space-y-1">

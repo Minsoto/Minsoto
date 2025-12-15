@@ -9,7 +9,9 @@ urlpatterns = [
     # User
     path('user/me/', views.user_me, name='user_me'),
     path('user/username/change/', views.change_username, name='change_username'),
+    path('user/status/', views.update_status, name='update_status'),
     
     # Health Check
     path('health/', views.health_check, name='health_check'),
 ]
+

@@ -7,8 +7,9 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_setup_complete')
-        read_only_fields = ('id', 'email')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_setup_complete',
+                  'status', 'status_message', 'last_active', 'focus_session_start')
+        read_only_fields = ('id', 'email', 'last_active')
 
 
 class UserMinimalSerializer(serializers.ModelSerializer):
@@ -17,13 +18,20 @@ class UserMinimalSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'profile_picture_url')
+        fields = ('id', 'username', 'first_name', 'last_name', 'profile_picture_url', 
+                  'status', 'status_message')
         read_only_fields = fields
     
     def get_profile_picture_url(self, obj):
         if hasattr(obj, 'profile') and obj.profile:
             return obj.profile.profile_picture_url
         return ''
+
+
+class UserStatusSerializer(serializers.Serializer):
+    """Serializer for updating user status"""
+    status = serializers.ChoiceField(choices=['online', 'idle', 'focus', 'dnd', 'offline'])
+    status_message = serializers.CharField(max_length=100, required=False, allow_blank=True)
 
 
 class GoogleAuthSerializer(serializers.Serializer):
@@ -43,3 +51,4 @@ class UsernameSetupSerializer(serializers.Serializer):
         if len(value) < 3:
             raise serializers.ValidationError("Username must be at least 3 characters long.")
         return value
+

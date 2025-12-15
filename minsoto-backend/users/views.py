@@ -200,3 +200,36 @@ def health_check(request):
         'timestamp': timezone.now().isoformat(),
         'service': 'minsoto-backend'
     })
+
+
+@api_view(['POST', 'PATCH'])
+@permission_classes([IsAuthenticated])
+def update_status(request):
+    """Update user's presence status (online/idle/focus/dnd/offline)"""
+    from .serializers import UserStatusSerializer
+    
+    serializer = UserStatusSerializer(data=request.data)
+    if serializer.is_valid():
+        user = request.user
+        user.status = serializer.validated_data['status']
+        
+        if 'status_message' in serializer.validated_data:
+            user.status_message = serializer.validated_data['status_message']
+        
+        # Track focus session start time
+        if serializer.validated_data['status'] == 'focus':
+            if not user.focus_session_start:
+                user.focus_session_start = timezone.now()
+        else:
+            user.focus_session_start = None
+        
+        user.save()
+        
+        return Response({
+            'status': user.status,
+            'status_message': user.status_message,
+            'focus_session_start': user.focus_session_start
+        })
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+

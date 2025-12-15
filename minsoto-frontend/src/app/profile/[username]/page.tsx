@@ -89,6 +89,21 @@ export default function ProfilePage() {
     }
   };
 
+  const handleUpdateAvatar = async (url: string) => {
+    try {
+      await api.patch('/profile/me/', { profile_picture_url: url });
+      setProfileData(prev => prev ? {
+        ...prev,
+        profile: {
+          ...prev.profile,
+          user: { ...prev.profile.user, profile_picture_url: url }
+        }
+      } : null);
+    } catch (error) {
+      console.error('Failed to update avatar:', error);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[var(--background)] flex items-center justify-center text-white">
@@ -124,6 +139,7 @@ export default function ProfilePage() {
           onOpenEditor={() => setIsEditorOpen(true)}
           bannerUrl={profile.banner_url}
           onUpdateBanner={handleUpdateBanner}
+          onUpdateAvatar={handleUpdateAvatar}
         />
 
         {/* Main Canvas View */}
