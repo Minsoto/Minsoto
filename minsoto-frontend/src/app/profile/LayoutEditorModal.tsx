@@ -12,6 +12,8 @@ import HabitStreakWidget from '../../components/widgets/HabitStreakWidget';
 import HabitGraphWidget from '../../components/widgets/HabitGraphWidget';
 import InterestsWidget from '../../components/widgets/InterestsWidget';
 import ImageWidget from '../../components/widgets/ImageWidget';
+import StreakShowcaseWidget from '../../components/widgets/StreakShowcaseWidget';
+import TextWidget from '../../components/widgets/TextWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -134,9 +136,21 @@ export default function LayoutEditorModal({
                 const maxLongest = Math.max(0, ...props.habits.map((h: any) => h.longest_streak || 0));
                 return <HabitStreakWidget {...props} currentStreak={maxCurrent} longestStreak={maxLongest} />;
             }
+            case 'streak-showcase': {
+                const handleSelectHabit = (habitId: string) => {
+                    handleConfigUpdate(widget.id, { ...widget.config, selectedHabitId: habitId });
+                };
+                return <StreakShowcaseWidget
+                    {...props}
+                    selectedHabitId={widget.config?.selectedHabitId as string | undefined}
+                    onSelectHabit={handleSelectHabit}
+                />;
+            }
             case 'habit-graph': return <HabitGraphWidget {...props} />;
             case 'interests': return <InterestsWidget {...props} />;
             case 'image': return <ImageWidget {...props} config={widget.config || {}} onUpdateConfig={handleConfigUpdate} />;
+            case 'text': return <TextWidget {...props} config={widget.config || {}} onUpdateConfig={handleConfigUpdate} />;
+            case 'goals': return <div className="glass-panel h-full p-4 flex items-center justify-center text-white/40 text-sm">Goals widget (edit mode)</div>;
             default: return <div className="border border-red-500 p-2 text-xs">Unknown</div>;
         }
     };

@@ -9,6 +9,8 @@ import HabitStreakWidget from '../../components/widgets/HabitStreakWidget';
 import HabitGraphWidget from '../../components/widgets/HabitGraphWidget';
 import InterestsWidget from '../../components/widgets/InterestsWidget';
 import ImageWidget from '../../components/widgets/ImageWidget';
+import StreakShowcaseWidget from '../../components/widgets/StreakShowcaseWidget';
+import TextWidget from '../../components/widgets/TextWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -62,19 +64,26 @@ export default function ProfileCanvas({
       return null;
     }
 
+    const habits = widgetData.habits || [];
+
     switch (widget.type) {
       case 'tasks': return <TasksWidget {...commonProps} tasks={widgetData.tasks || []} />;
       case 'habit-streak': {
-        const habits = widgetData.habits || [];
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const maxCurrent = Math.max(0, ...habits.map((h: any) => h.current_streak || 0));
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const maxLongest = Math.max(0, ...habits.map((h: any) => h.longest_streak || 0));
         return <HabitStreakWidget {...commonProps} habits={habits} currentStreak={maxCurrent} longestStreak={maxLongest} />;
       }
+      case 'streak-showcase': {
+        const selectedHabitId = widget.config?.selectedHabitId as string | undefined;
+        return <StreakShowcaseWidget {...commonProps} habits={habits} selectedHabitId={selectedHabitId} />;
+      }
       case 'habit-graph': return <HabitGraphWidget {...commonProps} />;
       case 'interests': return <InterestsWidget {...commonProps} interests={widgetData.interests || []} />;
       case 'image': return <ImageWidget {...commonProps} config={widget.config || {}} />;
+      case 'text': return <TextWidget {...commonProps} config={widget.config || {}} />;
+      case 'goals': return <div className="glass-panel h-full p-4 flex items-center justify-center text-white/40 text-sm">Goals (view only)</div>;
       default: return null;
     }
   };

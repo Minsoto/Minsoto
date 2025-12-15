@@ -20,6 +20,13 @@ interface WidgetLibraryProps {
 // Only functional widgets
 const WIDGET_TEMPLATES: WidgetTemplate[] = [
   {
+    type: 'streak-showcase',
+    name: 'Streak Showcase',
+    description: 'Feature a single habit streak with big fire emoji',
+    defaultSize: { w: 1, h: 2 },
+    icon: '🔥'
+  },
+  {
     type: 'tasks',
     name: 'Tasks',
     description: 'View your tasks and their status',
@@ -28,10 +35,10 @@ const WIDGET_TEMPLATES: WidgetTemplate[] = [
   },
   {
     type: 'habit-streak',
-    name: 'Habit Streaks',
+    name: 'Habit Tracker',
     description: 'Track your daily habits and streaks',
     defaultSize: { w: 1, h: 2 },
-    icon: '🔥'
+    icon: '✅'
   },
   {
     type: 'habit-graph',
@@ -41,11 +48,25 @@ const WIDGET_TEMPLATES: WidgetTemplate[] = [
     icon: '📊'
   },
   {
+    type: 'goals',
+    name: 'Goals Progress',
+    description: 'Track your goals with progress bars',
+    defaultSize: { w: 2, h: 2 },
+    icon: '🎯'
+  },
+  {
     type: 'interests',
     name: 'Interests',
     description: 'Display your interests',
     defaultSize: { w: 1, h: 1 },
     icon: '🏷️'
+  },
+  {
+    type: 'text',
+    name: 'Text / Quote',
+    description: 'Custom text with font options',
+    defaultSize: { w: 2, h: 1 },
+    icon: '✍️'
   },
   {
     type: 'image',
@@ -80,44 +101,57 @@ export default function WidgetLibrary({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 h-full w-80 md:w-96 bg-black border-l border-white/20 z-50 overflow-hidden flex flex-col"
+            className="fixed right-0 top-0 h-full w-80 md:w-[420px] bg-[var(--background)] border-l border-white/10 z-50 overflow-hidden flex flex-col"
           >
             {/* Header */}
-            <div className="p-6 border-b border-white/20">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-xs tracking-widest">ADD WIDGET</h2>
+            <div className="p-6 border-b border-white/10 bg-white/[0.02]">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Add Widget</h2>
+                  <p className="text-xs text-white/40 mt-1">Customize your profile</p>
+                </div>
                 <button
                   onClick={onClose}
-                  className="p-1 hover:bg-white/10 transition-colors"
+                  className="p-2 rounded-lg hover:bg-white/10 transition-colors"
                 >
-                  <X size={16} />
+                  <X size={18} className="text-white/60" />
                 </button>
               </div>
-              <p className="text-xs opacity-40">
-                Select a widget to add
-              </p>
             </div>
 
-            {/* Widget List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {WIDGET_TEMPLATES.map(template => (
-                <button
-                  key={template.type}
-                  onClick={() => {
-                    onAddWidget(template);
-                    onClose();
-                  }}
-                  className="w-full text-left p-4 border border-white/20 hover:border-white/50 hover:bg-white/5 transition-all"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="text-xl">{template.icon}</span>
-                    <div className="flex-1">
-                      <h3 className="text-sm mb-0.5">{template.name}</h3>
-                      <p className="text-xs opacity-40">{template.description}</p>
+            {/* Widget Grid */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="grid grid-cols-2 gap-3">
+                {WIDGET_TEMPLATES.map((template, index) => (
+                  <motion.button
+                    key={template.type}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => {
+                      onAddWidget(template);
+                      onClose();
+                    }}
+                    className="group text-left p-4 rounded-xl glass-panel hover:bg-white/10 transition-all duration-200 hover:scale-[1.02] hover:border-white/20"
+                  >
+                    {/* Icon */}
+                    <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-3 group-hover:bg-white/10 transition-colors">
+                      <span className="text-xl">{template.icon}</span>
                     </div>
-                  </div>
-                </button>
-              ))}
+
+                    {/* Info */}
+                    <h3 className="text-sm font-medium text-white mb-1">{template.name}</h3>
+                    <p className="text-xs text-white/40 leading-relaxed line-clamp-2">{template.description}</p>
+
+                    {/* Size indicator */}
+                    <div className="flex gap-1 mt-3">
+                      {Array.from({ length: template.defaultSize.w }).map((_, i) => (
+                        <div key={i} className="w-3 h-1 rounded-full bg-white/20" />
+                      ))}
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
             </div>
           </motion.div>
         </>

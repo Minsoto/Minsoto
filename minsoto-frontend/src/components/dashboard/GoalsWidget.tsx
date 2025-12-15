@@ -91,10 +91,10 @@ export default function GoalsWidget() {
             {/* Header */}
             <div className="flex items-center justify-between mb-4 relative z-10">
                 <div className="flex items-center gap-2">
-                    <Target size={16} className="text-cyan-400" />
-                    <h2 className="text-sm font-bold tracking-widest text-white/60 uppercase">2024 Goals</h2>
+                    <Target size={16} className="text-white/50" />
+                    <h2 className="text-sm font-bold tracking-widest text-white/60 uppercase">{new Date().getFullYear()} Goals</h2>
                 </div>
-                <span className="text-xs font-mono text-cyan-400">{overallProgress}% overall</span>
+                <span className="text-xs font-mono text-white/50">{overallProgress}% overall</span>
             </div>
 
             {/* Circular Progress */}
