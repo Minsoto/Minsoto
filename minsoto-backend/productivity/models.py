@@ -99,6 +99,60 @@ class Dashboard(models.Model):
         verbose_name_plural = "Dashboards"
 
 
+class Goal(models.Model):
+    """
+    Long-term goals with progress tracking.
+    E.g., "Read 24 books", "Run 500km", "Save $10,000"
+    """
+    CATEGORY_CHOICES = [
+        ('health', 'Health'),
+        ('career', 'Career'),
+        ('learning', 'Learning'),
+        ('finance', 'Finance'),
+        ('personal', 'Personal'),
+        ('other', 'Other'),
+    ]
+    
+    COLOR_CHOICES = [
+        ('pink', 'Pink'),
+        ('green', 'Green'),
+        ('yellow', 'Yellow'),
+        ('blue', 'Blue'),
+        ('purple', 'Purple'),
+        ('cyan', 'Cyan'),
+    ]
+    
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='goals')
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    target_value = models.FloatField(default=100)
+    current_value = models.FloatField(default=0)
+    unit = models.CharField(max_length=50, blank=True)  # "books", "km", "$"
+    deadline = models.DateField(null=True, blank=True)
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='personal')
+    color = models.CharField(max_length=20, choices=COLOR_CHOICES, default='cyan')
+    is_completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', 'is_completed']),
+            models.Index(fields=['user', 'category']),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"
+    
+    @property
+    def progress_percent(self):
+        if self.target_value <= 0:
+            return 0
+        return min(100, round((self.current_value / self.target_value) * 100))
+
+
 # Signal to create Dashboard when user is created
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user_dashboard(sender, instance, created, **kwargs):

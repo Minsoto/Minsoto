@@ -191,6 +191,34 @@ export default function SettingsPage() {
                     <p className="text-sm text-white/40">Coming soon</p>
                 </section>
 
+                {/* Organizations Section */}
+                <section className="border border-white/20 p-6 mb-6 relative">
+                    <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white" />
+                    <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-white" />
+                    <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-white" />
+                    <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-white" />
+
+                    <h2 className="text-xs font-light tracking-widest opacity-70 mb-6 flex items-center gap-2">
+                        <Shield size={14} />
+                        ORGANIZATIONS
+                    </h2>
+
+                    <p className="text-sm text-white/60 mb-4">
+                        Verify your organization membership using your organization email (college, company, etc.)
+                    </p>
+
+                    <div className="space-y-3 mb-4">
+                        <p className="text-xs text-white/40">Your organizations will appear here after verification.</p>
+                    </div>
+
+                    <a
+                        href="/discover"
+                        className="inline-block px-4 py-2 border border-white/30 text-sm text-white/70 hover:text-white hover:border-white transition-colors"
+                    >
+                        Discover Organizations →
+                    </a>
+                </section>
+
                 {/* Sign Out Section */}
                 <section className="border border-red-500/30 p-6 relative">
                     <h2 className="text-xs font-light tracking-widest text-red-400/70 mb-4 flex items-center gap-2">

@@ -56,36 +56,34 @@ export default function BaseWidget({
         {children}
       </div>
 
-      {/* EDIT OVERLAY */}
+      {/* EDIT MODE TOOLBAR - only at top, doesn't block content */}
       {isEditMode && isOwner && (
-        <div className={`absolute inset-0 bg-black/40 backdrop-blur-[2px] z-20 flex flex-col items-center justify-center gap-3 transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
-          <div className="absolute top-3 left-3 cursor-move p-2 bg-white/10 rounded-lg hover:bg-white/20">
-            <GripVertical size={16} className="text-white" />
+        <div className={`absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-3 py-2 bg-gradient-to-b from-black/80 to-transparent transition-opacity duration-200 ${isHovered ? 'opacity-100' : 'opacity-0'}`}>
+          {/* Drag Handle */}
+          <div className="cursor-move p-1.5 bg-white/10 rounded hover:bg-white/20 transition-colors">
+            <GripVertical size={14} className="text-white" />
           </div>
 
-          <div className="flex gap-2 scale-110">
+          {/* Controls */}
+          <div className="flex items-center gap-1.5">
             <button
               onClick={(e) => { e.stopPropagation(); onVisibilityToggle?.(); }}
-              className={`p-2 rounded-lg transition-colors border ${isPrivate
-                ? 'bg-red-500/20 border-red-500/50 text-red-200 hover:bg-red-500/30'
-                : 'bg-green-500/20 border-green-500/50 text-green-200 hover:bg-green-500/30'
+              className={`p-1.5 rounded transition-colors ${isPrivate
+                ? 'bg-red-500/30 text-red-300 hover:bg-red-500/50'
+                : 'bg-green-500/30 text-green-300 hover:bg-green-500/50'
                 }`}
-              title={isPrivate ? 'Currently Private (Hidden)' : 'Currently Public (Visible)'}
+              title={isPrivate ? 'Private (click to make public)' : 'Public (click to hide)'}
             >
-              {isPrivate ? <Lock size={16} /> : <Eye size={16} />}
+              {isPrivate ? <Lock size={12} /> : <Eye size={12} />}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onDelete?.(); }}
-              className="p-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-red-500/20 hover:border-red-500/50 hover:text-red-200 transition-colors"
+              className="p-1.5 bg-white/10 rounded text-white/70 hover:bg-red-500/30 hover:text-red-300 transition-colors"
               title="Delete Widget"
             >
-              <Trash2 size={16} />
+              <Trash2 size={12} />
             </button>
           </div>
-
-          <p className="text-xs font-mono text-white/50 mt-2 bg-black/50 px-2 py-1 rounded">
-            click & drag to move
-          </p>
         </div>
       )}
 

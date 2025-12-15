@@ -579,30 +579,51 @@ def discover_users(request):
         )
     
     users = users[:50]
+    user_ids = [u.id for u in users]
+    
+    # Batch load all connections for discovered users (optimized - avoids N+1)
+    connections_map = {}
+    for conn in Connection.objects.filter(
+        Q(from_user=request.user, to_user_id__in=user_ids) |
+        Q(to_user=request.user, from_user_id__in=user_ids)
+    ):
+        other_id = conn.to_user_id if conn.from_user_id == request.user.id else conn.from_user_id
+        connections_map[other_id] = conn
+    
+    # Batch load interests
+    user_interests = {}
+    for ui in UserInterest.objects.filter(user_id__in=user_ids, is_public=True).select_related('interest'):
+        if ui.user_id not in user_interests:
+            user_interests[ui.user_id] = []
+        if len(user_interests[ui.user_id]) < 5:
+            user_interests[ui.user_id].append(ui.interest.name)
+    
+    # Batch load organizations
+    user_orgs = {}
+    for m in OrganizationMembership.objects.filter(
+        user_id__in=user_ids,
+        verification_status='verified',
+        show_on_profile=True
+    ).select_related('organization'):
+        if m.user_id not in user_orgs:
+            user_orgs[m.user_id] = []
+        if len(user_orgs[m.user_id]) < 3:
+            user_orgs[m.user_id].append(m.organization.name)
     
     results = []
     for user in users:
-        connection = Connection.get_connection_between(request.user, user)
+        connection = connections_map.get(user.id)
         connection_status_val = 'none'
         if connection:
             if connection.status == 'pending':
-                connection_status_val = 'pending_sent' if connection.from_user == request.user else 'pending_received'
+                connection_status_val = 'pending_sent' if connection.from_user_id == request.user.id else 'pending_received'
             elif connection.status == 'accepted':
                 connection_status_val = 'friends' if connection.connection_type == 'friend' else 'connected'
         
         user_data = UserMinimalSerializer(user).data
         user_data['connection_status'] = connection_status_val
-        
-        # Add interests
-        interests = user.user_interests.filter(is_public=True)[:5]
-        user_data['interests'] = [ui.interest.name for ui in interests]
-        
-        # Add organizations
-        orgs = user.organization_memberships.filter(
-            verification_status='verified',
-            show_on_profile=True
-        ).select_related('organization')[:3]
-        user_data['organizations'] = [m.organization.name for m in orgs]
+        user_data['interests'] = user_interests.get(user.id, [])
+        user_data['organizations'] = user_orgs.get(user.id, [])
         
         results.append(user_data)
     

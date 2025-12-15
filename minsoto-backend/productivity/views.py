@@ -6,10 +6,11 @@ from django.utils import timezone
 from django.db.models import Q
 from datetime import timedelta
 
-from .models import HabitStreak, HabitLog, Task, Dashboard
+from .models import HabitStreak, HabitLog, Task, Dashboard, Goal
 from .serializers import (
     HabitStreakSerializer, HabitLogSerializer, TaskSerializer,
-    DashboardSerializer, DashboardLayoutUpdateSerializer, DashboardStatsSerializer
+    DashboardSerializer, DashboardLayoutUpdateSerializer, DashboardStatsSerializer,
+    GoalSerializer
 )
 # Cross-app imports
 from social.models import UserInterest
@@ -227,22 +228,29 @@ def dashboard_focus(request):
         Q(status='completed', updated_at__date=today)
     ).order_by('status', 'due_date', '-priority')[:20]
     
-    # Today's habits
+    # Today's habits - optimized: batch load completion status
     habits = HabitStreak.objects.filter(user=request.user)
-    habits_data = []
-    for habit in habits:
-        completed_today = HabitLog.objects.filter(
-            habit=habit,
+    habit_ids = [h.id for h in habits]
+    
+    # Single query to get all completed habits for today
+    completed_habit_ids = set(
+        HabitLog.objects.filter(
+            habit_id__in=habit_ids,
             date=today,
             completed=True
-        ).exists()
-        habits_data.append({
+        ).values_list('habit_id', flat=True)
+    )
+    
+    habits_data = [
+        {
             'id': str(habit.id),
             'name': habit.name,
-            'completed_today': completed_today,
+            'completed_today': habit.id in completed_habit_ids,
             'current_streak': habit.current_streak,
             'time': None
-        })
+        }
+        for habit in habits
+    ]
     
     return Response({
         'tasks': TaskSerializer(tasks_today, many=True).data,
@@ -273,37 +281,34 @@ def dashboard_stats(request):
     
     total_tasks = Task.objects.filter(user=request.user).count()
     
-    # Habit stats
+    # Habit stats - optimized using aggregation
+    from django.db.models import Max
     habits = HabitStreak.objects.filter(user=request.user)
     total_habits = habits.count()
     
     habits_completed_today = HabitLog.objects.filter(
-        habit__in=habits,
+        habit__user=request.user,
         date=today,
         completed=True
     ).count()
     
-    max_current = 0
-    max_longest = 0
-    for h in habits:
-        max_current = max(max_current, h.current_streak)
-        max_longest = max(max_longest, h.longest_streak)
+    # Use aggregation instead of Python iteration
+    streak_stats = habits.aggregate(
+        max_current=Max('current_streak'),
+        max_longest=Max('longest_streak')
+    )
         
     data = {
         'tasks_completed_today': tasks_completed_today,
         'tasks_completed_week': tasks_completed_week,
         'habits_completed_today': habits_completed_today,
         'habits_total_today': total_habits,
-        'current_streak': max_current,
-        'longest_streak': max_longest,
+        'current_streak': streak_stats['max_current'] or 0,
+        'longest_streak': streak_stats['max_longest'] or 0,
         'total_tasks': total_tasks,
         'total_habits': total_habits
     }
     
-    # Use serializer to validate structure (optional but good practice)
-    serializer = DashboardStatsSerializer(data=data)
-    # Hack: We aren't really validating input here, just constructing output. 
-    # But for consistency related to imports, we just return data.
     return Response(data)
 
 
@@ -345,3 +350,54 @@ def widget_data(request):
     }
     
     return Response(data)
+
+
+# =============================================================================
+# Goals
+# =============================================================================
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
+def goals_list(request):
+    """List all goals or create new goal"""
+    if request.method == 'GET':
+        goals = request.user.goals.all()
+        serializer = GoalSerializer(goals, many=True)
+        return Response(serializer.data)
+    
+    elif request.method == 'POST':
+        serializer = GoalSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(user=request.user)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET', 'PATCH', 'DELETE'])
+@permission_classes([IsAuthenticated])
+def goal_detail(request, goal_id):
+    """Get, update, or delete a specific goal"""
+    try:
+        goal = Goal.objects.get(id=goal_id, user=request.user)
+    except Goal.DoesNotExist:
+        return Response({'error': 'Goal not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.method == 'GET':
+        serializer = GoalSerializer(goal)
+        return Response(serializer.data)
+    
+    elif request.method == 'PATCH':
+        serializer = GoalSerializer(goal, data=request.data, partial=True)
+        if serializer.is_valid():
+            # Check if goal is completed
+            updated_goal = serializer.save()
+            if updated_goal.current_value >= updated_goal.target_value:
+                updated_goal.is_completed = True
+                updated_goal.save()
+            return Response(GoalSerializer(updated_goal).data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    elif request.method == 'DELETE':
+        goal.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+

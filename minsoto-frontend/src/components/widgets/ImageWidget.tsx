@@ -84,28 +84,30 @@ export default function ImageWidget({
                                 )}
                             </div>
                         )}
-
-                        {/* Owner Edit Button (visible on hover if has image) */}
-                        {isOwner && hasImage && isEditMode && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setUrl(config.url || '');
-                                    setCaption(config.caption || '');
-                                    setMode(config.mode || 'cover');
-                                    setIsEditing(true);
-                                }}
-                                className="absolute top-2 right-2 p-2 bg-black/50 backdrop-blur rounded-lg text-white/70 hover:text-white hover:bg-black/70 transition-all z-10"
-                            >
-                                <Edit2 size={14} />
-                            </button>
-                        )}
                     </>
+                )}
+
+                {/* EDIT BUTTON - Positioned above BaseWidget overlay (z-30) */}
+                {!isEditing && isOwner && hasImage && isEditMode && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            setUrl(config.url || '');
+                            setCaption(config.caption || '');
+                            setMode(config.mode || 'cover');
+                            setIsEditing(true);
+                        }}
+                        className="absolute top-2 right-2 p-2 bg-blue-500/80 backdrop-blur rounded-lg text-white hover:bg-blue-600 transition-all z-30"
+                        title="Edit Image"
+                    >
+                        <Edit2 size={14} />
+                    </button>
                 )}
 
                 {/* EDIT MODE OVERLAY */}
                 {isEditing && (
-                    <div className="absolute inset-0 bg-[#090910] z-20 flex flex-col p-4 gap-3">
+                    <div className="absolute inset-0 bg-[#090910] z-40 flex flex-col p-4 gap-3">
                         <h4 className="text-xs font-bold text-white/50 uppercase tracking-widest">Configure Image</h4>
 
                         <div className="space-y-1">
