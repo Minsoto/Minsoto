@@ -228,8 +228,15 @@ def dashboard_focus(request):
         Q(status='completed', updated_at__date=today)
     ).order_by('status', 'due_date', '-priority')[:20]
     
+    # Upcoming tasks (future due dates, not completed)
+    upcoming_tasks = Task.objects.filter(
+        user=request.user,
+        due_date__date__gt=today,
+        status__in=['todo', 'in_progress']
+    ).order_by('due_date')[:10]
+    
     # Today's habits - optimized: batch load completion status
-    habits = HabitStreak.objects.filter(user=request.user)
+    habits = HabitStreak.objects.filter(user=request.user).order_by('-current_streak')
     habit_ids = [h.id for h in habits]
     
     # Single query to get all completed habits for today
@@ -247,6 +254,7 @@ def dashboard_focus(request):
             'name': habit.name,
             'completed_today': habit.id in completed_habit_ids,
             'current_streak': habit.current_streak,
+            'image_url': habit.image_url,
             'time': None
         }
         for habit in habits
@@ -255,6 +263,7 @@ def dashboard_focus(request):
     return Response({
         'tasks': TaskSerializer(tasks_today, many=True).data,
         'habits': habits_data,
+        'upcoming_tasks': TaskSerializer(upcoming_tasks, many=True).data,
         'date': today.isoformat()
     })
 

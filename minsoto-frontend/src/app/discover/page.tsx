@@ -7,6 +7,7 @@ import api from '@/lib/api';
 import UserCard from '@/components/connections/UserCard';
 import Navigation from '@/components/Navigation';
 import type { DiscoverUser, Organization } from '@/types/connections';
+import { Search } from 'lucide-react';
 
 export default function DiscoverPage() {
     const router = useRouter();
@@ -64,14 +65,17 @@ export default function DiscoverPage() {
     };
 
     return (
-        <div className="min-h-screen bg-black text-white">
+        <div className="min-h-screen bg-[var(--background)] text-white">
             <Navigation />
 
-            <main className="max-w-6xl mx-auto px-6 py-8">
+            {/* Spacer for fixed nav */}
+            <div className="h-16" />
+
+            <main className="container-wide py-8">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-light tracking-wide mb-2">Discover</h1>
-                    <p className="text-white/50">Find and connect with people</p>
+                <div className="mb-8 animate-fadeIn">
+                    <h1 className="heading-lg">Discover</h1>
+                    <p className="text-white/50 mt-1">Find and connect with people</p>
                 </div>
 
                 {/* Filters */}
@@ -79,16 +83,17 @@ export default function DiscoverPage() {
                     {/* Search */}
                     <form onSubmit={handleSearch} className="flex-1">
                         <div className="relative">
+                            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
                             <input
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Search by name or username..."
-                                className="w-full bg-transparent border border-white/20 px-4 py-3 text-white placeholder:text-white/30 focus:border-white/40 focus:outline-none transition-colors"
+                                className="input pl-11"
                             />
                             <button
                                 type="submit"
-                                className="absolute right-2 top-1/2 -translate-y-1/2 px-4 py-1.5 text-sm text-white/60 hover:text-white transition-colors"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 btn btn-ghost text-sm"
                             >
                                 Search
                             </button>
@@ -99,7 +104,7 @@ export default function DiscoverPage() {
                     <select
                         value={selectedOrg}
                         onChange={(e) => handleOrgFilter(e.target.value)}
-                        className="bg-black border border-white/20 px-4 py-3 text-white focus:border-white/40 focus:outline-none transition-colors min-w-[200px]"
+                        className="input min-w-[200px]"
                     >
                         <option value="">All Organizations</option>
                         {organizations.map(org => (
@@ -112,11 +117,11 @@ export default function DiscoverPage() {
 
                 {/* Results */}
                 {loading ? (
-                    <div className="text-center py-12 text-white/50">
-                        Loading...
+                    <div className="flex items-center justify-center py-20">
+                        <div className="animate-spin w-8 h-8 border-2 border-white/30 rounded-full border-t-transparent" />
                     </div>
                 ) : users.length === 0 ? (
-                    <div className="text-center py-12 border border-white/10">
+                    <div className="text-center py-16 glass-panel rounded-xl">
                         <p className="text-white/50 mb-2">No users found</p>
                         <p className="text-white/30 text-sm">Try adjusting your search or filters</p>
                     </div>
@@ -131,3 +136,4 @@ export default function DiscoverPage() {
         </div>
     );
 }
+

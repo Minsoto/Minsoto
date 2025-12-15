@@ -89,16 +89,32 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white"><div className="animate-spin w-8 h-8 border-2 border-cyan-500 rounded-full border-t-transparent" /></div>;
-  if (!profileData) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Profile not found</div>;
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center text-white">
+        <div className="animate-spin w-8 h-8 border-2 border-white/30 rounded-full border-t-transparent" />
+      </div>
+    );
+  }
+
+  if (!profileData) {
+    return (
+      <div className="min-h-screen bg-[var(--background)] flex items-center justify-center text-white/60">
+        Profile not found
+      </div>
+    );
+  }
 
   const { profile, is_owner } = profileData;
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-[var(--background)] text-white">
       <Navigation />
 
-      <div className="flex flex-col md:flex-row min-h-[calc(100vh-65px)]">
+      {/* Spacer for fixed nav */}
+      <div className="h-16" />
+
+      <div className="flex flex-col md:flex-row min-h-[calc(100vh-64px)]">
         {/* Sidebar */}
         <ProfileSidebar
           user={profile.user}
@@ -111,9 +127,9 @@ export default function ProfilePage() {
         />
 
         {/* Main Canvas View */}
-        <div className="flex-1 bg-[#050508] relative">
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-full h-96 bg-gradient-to-b from-blue-900/10 to-transparent pointer-events-none" />
+        <div className="flex-1 bg-[var(--background)] relative">
+          {/* Subtle background decoration */}
+          <div className="absolute top-0 right-0 w-full h-96 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
 
           <ProfileCanvas
             widgets={profile.layout?.widgets || []}
@@ -136,3 +152,4 @@ export default function ProfilePage() {
     </div>
   );
 }
+

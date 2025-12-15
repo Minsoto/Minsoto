@@ -3,20 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/authStore";
-
-const Link = ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => (
-  <a href={href} className={className}>
-    {children}
-  </a>
-);
+import Image from "next/image";
+import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowRight, Sparkles, Users, Target, Zap } from "lucide-react";
 
 export default function Home() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [scrollY, setScrollY] = useState(0);
   const [currentKanji, setCurrentKanji] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Japanese elements for rotation - focused on community and harmony
+  // Japanese elements for rotation
   const kanjiElements = [
     { char: '和', meaning: 'Harmony', reading: 'wa' },
     { char: '集', meaning: 'Gather', reading: 'atsu' },
@@ -25,35 +21,10 @@ export default function Home() {
     { char: '美', meaning: 'Beauty', reading: 'bi' }
   ];
 
-  // Mouse tracking
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setMousePosition({
-          x: e.clientX - rect.left,
-          y: e.clientY - rect.top,
-        });
-      }
-    };
-
-    const handleScroll = () => setScrollY(window.scrollY);
-
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("scroll", handleScroll);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
-
-  // Kanji rotation
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentKanji((prev) => (prev + 1) % kanjiElements.length);
     }, 4000);
-
     return () => clearInterval(interval);
   }, [kanjiElements.length]);
 
@@ -66,237 +37,408 @@ export default function Home() {
     }
   }, [isAuthenticated, user, router, _hasHydrated]);
 
+  const features = [
+    { icon: Target, title: 'Track Goals', desc: 'Set and achieve your goals with visual progress tracking' },
+    { icon: Users, title: 'Connect', desc: 'Build meaningful connections with like-minded people' },
+    { icon: Zap, title: 'Stay Focused', desc: 'Minimize distractions with mindful design' },
+    { icon: Sparkles, title: 'Grow Together', desc: 'Level up alongside your community' },
+  ];
+
   return (
     <div
       ref={containerRef}
-      className="min-h-screen bg-black text-white overflow-x-hidden relative"
+      className="min-h-screen bg-[var(--background)] text-white overflow-x-hidden relative"
     >
-      {/* === Japanese Minimalist Background === */}
-      <div className="fixed inset-0 pointer-events-none">
-        {/* Subtle moving gradient that follows mouse */}
+      {/* === Animated Background === */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {/* Gradient mesh */}
         <div
-          className="absolute w-96 h-96 opacity-8 transition-all duration-1000 ease-out"
+          className="absolute inset-0 opacity-50"
+          style={{ background: 'var(--gradient-mesh)' }}
+        />
+
+        {/* Animated gradient orbs */}
+        <motion.div
+          className="absolute w-[600px] h-[600px] rounded-full"
           style={{
-            background: 'radial-gradient(circle, white 0%, transparent 70%)',
-            left: `${mousePosition.x - 192}px`,
-            top: `${mousePosition.y - 192}px`,
-            transform: 'translate(-50%, -50%)'
+            background: 'radial-gradient(circle, rgba(0, 212, 255, 0.15) 0%, transparent 70%)',
+            top: '10%',
+            left: '20%',
+          }}
+          animate={{
+            x: [0, 50, 0],
+            y: [0, 30, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+        <motion.div
+          className="absolute w-[500px] h-[500px] rounded-full"
+          style={{
+            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.12) 0%, transparent 70%)',
+            bottom: '10%',
+            right: '10%',
+          }}
+          animate={{
+            x: [0, -40, 0],
+            y: [0, -30, 0],
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: 'easeInOut',
           }}
         />
 
-        {/* Large Kanji Background */}
-        <div
-          className="absolute text-[20rem] font-thin opacity-5 transition-all duration-1000 select-none"
-          style={{
-            right: '10%',
-            top: `${20 + scrollY * 0.1}%`,
-            transform: `translateY(${scrollY * 0.2}px)`
-          }}
-        >
-          {kanjiElements[currentKanji].char}
-        </div>
-
-        {/* Secondary smaller kanji */}
-        <div
-          className="absolute text-6xl font-thin opacity-10 transition-all duration-1000 select-none"
-          style={{
-            left: '5%',
-            bottom: `${30 - scrollY * 0.05}%`,
-            transform: `translateY(${-scrollY * 0.1}px)`
-          }}
-        >
-          {kanjiElements[(currentKanji + 2) % kanjiElements.length].char}
-        </div>
-
-        {/* Grid Pattern */}
-        <svg className="absolute inset-0 w-full h-full opacity-3">
-          <defs>
-            <pattern id="landingGrid" width="80" height="80" patternUnits="userSpaceOnUse">
-              <path d="M 80 0 L 0 0 0 80" fill="none" stroke="white" strokeWidth="0.5" opacity="0.1" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#landingGrid)" />
-        </svg>
-
-        {/* Floating minimal elements */}
-        <div className="absolute top-1/4 right-1/3 w-1 h-1 bg-white opacity-20 animate-pulse" />
-        <div className="absolute bottom-1/3 left-1/4 w-1 h-1 bg-white opacity-30 animate-pulse" style={{ animationDelay: '2s' }} />
-        <div className="absolute top-2/3 right-1/5 w-1 h-1 bg-white opacity-25 animate-pulse" style={{ animationDelay: '4s' }} />
+        {/* Large kanji background */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={currentKanji}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 0.03, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 1 }}
+            className="absolute text-[25rem] font-thin select-none"
+            style={{
+              right: '-5%',
+              top: '10%',
+            }}
+          >
+            {kanjiElements[currentKanji].char}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       {/* === Navbar === */}
-      <nav className="relative z-10 p-6">
+      <nav className="relative z-10 px-6 py-5">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="text-2xl font-thin tracking-widest">MINSOTO</div>
-            <div className="h-4 w-px bg-white opacity-20" />
-            <div className="text-sm font-thin opacity-60">{kanjiElements[currentKanji].reading}</div>
-          </div>
-          <div className="flex items-center space-x-8">
-            <Link href="#features" className="text-sm font-light tracking-wide opacity-70 hover:opacity-100 transition-opacity hidden md:block">
-              FEATURES
+          <motion.div
+            className="flex items-center gap-4"
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Image
+              src="/favicon.ico"
+              alt="Logo"
+              width={36}
+              height={36}
+              className="w-9 h-9"
+            />
+            <div className="h-5 w-px bg-white/10" />
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={currentKanji}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 0.5, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="text-sm tracking-wide"
+              >
+                {kanjiElements[currentKanji].reading}
+              </motion.span>
+            </AnimatePresence>
+          </motion.div>
+
+          <motion.div
+            className="flex items-center gap-6"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Link
+              href="#features"
+              className="hidden md:block text-sm text-white/50 hover:text-white transition-colors"
+            >
+              Features
             </Link>
-            <Link href="#philosophy" className="text-sm font-light tracking-wide opacity-70 hover:opacity-100 transition-opacity hidden md:block">
-              PHILOSOPHY
+            <Link
+              href="#philosophy"
+              className="hidden md:block text-sm text-white/50 hover:text-white transition-colors"
+            >
+              Philosophy
             </Link>
             <Link
               href="/login"
-              className="group relative px-6 py-2 overflow-hidden transition-all duration-500"
+              className="btn btn-primary"
             >
-              <span className="relative z-10 text-sm font-light tracking-widest group-hover:text-black transition-colors duration-500">ENTER</span>
-              <div className="absolute inset-0 bg-white transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-              <div className="absolute inset-0 border border-white opacity-40 group-hover:opacity-0 transition-opacity duration-500" />
+              Get Started
+              <ArrowRight size={16} />
             </Link>
-          </div>
+          </motion.div>
         </div>
       </nav>
 
       {/* === Hero Section === */}
-      <section className="relative z-10 min-h-screen flex items-center">
+      <section className="relative z-10 min-h-[85vh] flex items-center pt-12">
         <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
           {/* Left Column */}
-          <div className="space-y-12">
+          <div className="space-y-10">
             {/* Kanji Display */}
-            <div className="relative">
-              <div className="text-8xl font-thin transition-all duration-1000 mb-4">
-                {kanjiElements[currentKanji].char}
+            <motion.div
+              className="relative"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentKanji}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 1.1 }}
+                  transition={{ duration: 0.8 }}
+                  className="text-8xl md:text-9xl font-thin text-white mb-3"
+                >
+                  {kanjiElements[currentKanji].char}
+                </motion.div>
+              </AnimatePresence>
+              <div className="flex items-center gap-3 text-sm text-white/40">
+                <span>{kanjiElements[currentKanji].reading}</span>
+                <span className="w-1 h-1 rounded-full bg-white/30" />
+                <span>{kanjiElements[currentKanji].meaning}</span>
               </div>
-              <div className="text-sm opacity-60">
-                {kanjiElements[currentKanji].reading} · {kanjiElements[currentKanji].meaning}
-              </div>
-            </div>
+            </motion.div>
 
-            <div className="space-y-8">
+            <motion.div
+              className="space-y-6"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+            >
               <div className="flex items-center gap-4">
-                <div className="h-px bg-white w-12 opacity-20" />
-                <span className="text-sm font-light tracking-widest opacity-60">THE MINDFUL NETWORK</span>
+                <div className="h-px w-12 bg-gradient-to-r from-cyan-400 to-transparent" />
+                <span className="text-sm text-white/60/80 tracking-wide">THE MINDFUL NETWORK</span>
               </div>
 
-              <h1 className="text-5xl lg:text-6xl font-thin leading-tight tracking-wide">
-                <span className="block mb-2">Community,</span>
-                <span className="block opacity-80">Without the Chaos</span>
+              <h1 className="heading-xl">
+                <span className="block text-white">Community,</span>
+                <span className="block text-white/70">Without the Chaos</span>
               </h1>
 
-              <p className="text-lg font-light opacity-70 leading-relaxed max-w-lg">
+              <p className="text-lg text-white/50 leading-relaxed max-w-lg">
                 Where focus meets growth through purposeful connection.
                 Experience the harmony of minimalist social interaction,
                 inspired by Japanese principles of mindful simplicity.
               </p>
-            </div>
+            </motion.div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link
-                href="/login"
-                className="group relative px-10 py-4 overflow-hidden transition-all duration-500"
-              >
-                <span className="relative z-10 text-sm font-light tracking-widest group-hover:text-black transition-colors duration-500">BEGIN JOURNEY</span>
-                <div className="absolute inset-0 bg-white transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-                <div className="absolute inset-0 border border-white opacity-60 group-hover:opacity-0 transition-opacity duration-500" />
-                {/* Corner accents */}
-                <div className="absolute top-0 right-0 w-0 h-0 border-t-4 border-r-4 border-t-transparent border-r-white opacity-40 group-hover:border-r-black transition-colors duration-500" />
+            <motion.div
+              className="flex flex-col sm:flex-row gap-4"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+            >
+              <Link href="/login" className="btn btn-primary text-base py-3 px-8">
+                Begin Your Journey
+                <ArrowRight size={18} />
               </Link>
-
               <Link
                 href="#philosophy"
-                className="group relative px-10 py-4 transition-all duration-500"
+                className="btn btn-secondary text-base py-3 px-8"
               >
-                <span className="relative z-10 text-sm font-light tracking-widest opacity-70 group-hover:opacity-100 transition-opacity duration-500">LEARN MORE</span>
-                <div className="absolute inset-0 border border-white opacity-20 group-hover:opacity-40 transition-opacity duration-500" />
+                Learn More
               </Link>
-            </div>
+            </motion.div>
           </div>
 
-          {/* Right Column - Abstract Zen Element */}
-          <div className="relative flex items-center justify-center">
-            <div className="relative group">
-              {/* Large rotating kanji */}
-              <div className="text-[12rem] font-thin opacity-10 group-hover:opacity-20 transition-all duration-1000 select-none">
-                {kanjiElements[(currentKanji + 1) % kanjiElements.length].char}
-              </div>
+          {/* Right Column - Visual Element */}
+          <motion.div
+            className="relative hidden lg:flex items-center justify-center"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+          >
+            {/* Floating cards preview */}
+            <div className="relative w-full max-w-md">
+              {/* Main card */}
+              <motion.div
+                className="glass-card p-6 rounded-2xl"
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-white/20 to-white/5 flex items-center justify-center text-lg font-medium">
+                    C
+                  </div>
+                  <div>
+                    <div className="font-medium">Chaitanya Anand</div>
+                    <div className="text-sm text-white/50">@chaitanya-anand</div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div className="text-xl font-semibold text-white/60">42</div>
+                    <div className="text-xs text-white/40">Day Streak</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-semibold text-white/80">12</div>
+                    <div className="text-xs text-white/40">Goals</div>
+                  </div>
+                  <div>
+                    <div className="text-xl font-semibold text-white/60">28</div>
+                    <div className="text-xs text-white/40">Connections</div>
+                  </div>
+                </div>
+              </motion.div>
 
-              {/* Floating elements around the kanji */}
-              <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-white opacity-20 rounded-full animate-pulse" />
-              <div className="absolute bottom-1/3 right-1/4 w-1 h-1 bg-white opacity-30 rounded-full animate-pulse" style={{ animationDelay: '1s' }} />
-              <div className="absolute top-2/3 left-1/3 w-1.5 h-1.5 bg-white opacity-25 rounded-full animate-pulse" style={{ animationDelay: '2s' }} />
+              {/* Floating accent cards */}
+              <motion.div
+                className="absolute -top-6 -right-6 glass-card p-4 rounded-xl"
+                animate={{ y: [0, -8, 0], rotate: [0, 2, 0] }}
+                transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 0.5 }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                    <Target size={16} className="text-white/70" />
+                  </div>
+                  <div className="text-sm">
+                    <div className="text-white/80">Goal Complete</div>
+                    <div className="text-xs text-white/40">+50 XP</div>
+                  </div>
+                </div>
+              </motion.div>
 
-              {/* Geometric accents */}
-              <div className="absolute top-0 right-0 w-16 h-16 border-t border-r border-white opacity-10 group-hover:opacity-30 transition-opacity duration-1000" />
-              <div className="absolute bottom-0 left-0 w-16 h-16 border-b border-l border-white opacity-10 group-hover:opacity-30 transition-opacity duration-1000" />
+              <motion.div
+                className="absolute -bottom-4 -left-8 glass-card p-4 rounded-xl"
+                animate={{ y: [0, -6, 0], rotate: [0, -2, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center">
+                    <Users size={16} className="text-white/70" />
+                  </div>
+                  <div className="text-sm">
+                    <div className="text-white/80">New Connection</div>
+                    <div className="text-xs text-white/40">Alex joined</div>
+                  </div>
+                </div>
+              </motion.div>
             </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* === Features Section === */}
+      <section id="features" className="relative z-10 py-24">
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <span className="text-sm text-white/60/80 tracking-wide">FEATURES</span>
+            <h2 className="heading-lg mt-3">Everything you need</h2>
+          </motion.div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {features.map((feature, i) => {
+              const Icon = feature.icon;
+              return (
+                <motion.div
+                  key={feature.title}
+                  className="glass-card group cursor-pointer"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.1 }}
+                  whileHover={{ y: -4 }}
+                >
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-white/10 to-white/5 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                    <Icon size={24} className="text-white/60" />
+                  </div>
+                  <h3 className="font-semibold mb-2">{feature.title}</h3>
+                  <p className="text-sm text-white/50">{feature.desc}</p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
 
       {/* === Philosophy Section === */}
-      <section id="philosophy" className="relative z-10 py-24 border-t border-white border-opacity-10">
+      <section id="philosophy" className="relative z-10 py-24 border-t border-white/5">
         <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="text-4xl font-thin mb-4">三つの道</div>
-            <div className="text-sm opacity-60 mb-8">Mittsu no Michi · Three Paths</div>
-            <div className="h-px bg-white opacity-10 w-24 mx-auto" />
-          </div>
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <div className="text-5xl font-thin text-white mb-3">三つの道</div>
+            <div className="text-sm text-white/40">Mittsu no Michi · Three Paths</div>
+          </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-12">
+          <div className="grid md:grid-cols-3 gap-8">
             {[
               { kanji: '簡', title: 'Simplicity', subtitle: 'Kan', desc: 'Remove the unnecessary to focus on what truly matters in your digital connections.' },
               { kanji: '念', title: 'Mindfulness', subtitle: 'Nen', desc: 'Every interaction is intentional, every connection meaningful and purposeful.' },
               { kanji: '調', title: 'Harmony', subtitle: 'Chō', desc: 'Balance between digital presence and real-world experiences, creating perfect equilibrium.' }
             ].map((item, i) => (
-              <div key={i} className="group text-center space-y-6 p-8 border border-white border-opacity-10 hover:border-opacity-30 transition-all duration-500">
-                <div className="text-6xl font-thin group-hover:scale-110 transition-transform duration-500">
+              <motion.div
+                key={i}
+                className="glass-card text-center group"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15 }}
+                whileHover={{ y: -4 }}
+              >
+                <div className="text-6xl font-thin text-white mb-4 group-hover:scale-110 transition-transform">
                   {item.kanji}
                 </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-light tracking-wide">{item.title}</h3>
-                  <div className="text-sm opacity-60">{item.subtitle}</div>
-                </div>
-                <div className="h-px bg-white opacity-10 w-12 mx-auto group-hover:w-16 transition-all duration-500" />
-                <p className="text-sm font-light opacity-60 leading-relaxed">
-                  {item.desc}
-                </p>
-
-                {/* Corner accent */}
-                <div className="absolute top-0 right-0 w-0 h-0 border-t-6 border-r-6 border-t-transparent border-r-white opacity-0 group-hover:opacity-20 transition-opacity duration-500" />
-              </div>
+                <h3 className="text-lg font-medium mb-1">{item.title}</h3>
+                <div className="text-sm text-white/40 mb-4">{item.subtitle}</div>
+                <div className="h-px w-12 mx-auto bg-gradient-to-r from-transparent via-white/20 to-transparent mb-4" />
+                <p className="text-sm text-white/50 leading-relaxed">{item.desc}</p>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* === Final CTA Section === */}
-      <section className="relative z-10 py-24 border-t border-white border-opacity-10">
-        <div className="max-w-3xl mx-auto px-6 text-center space-y-8">
-          <div className="text-3xl font-thin">一期一会</div>
-          <div className="text-sm opacity-60">Ichi-go ichi-e</div>
-          <p className="text-lg font-light opacity-70 leading-relaxed">
-            One time, one meeting. Treasure every encounter in our mindful digital space.
+      {/* === Final CTA === */}
+      <section className="relative z-10 py-24 border-t border-white/5">
+        <motion.div
+          className="max-w-3xl mx-auto px-6 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+        >
+          <div className="text-4xl font-thin text-gradient mb-2">一期一会</div>
+          <div className="text-sm text-white/40 mb-6">Ichi-go ichi-e · One time, one meeting</div>
+          <p className="text-lg text-white/50 mb-8 leading-relaxed">
+            Treasure every encounter in our mindful digital space.
           </p>
-
-          <div className="pt-8">
-            <Link
-              href="/login"
-              className="group relative px-12 py-4 overflow-hidden transition-all duration-500 inline-block"
-            >
-              <span className="relative z-10 text-sm font-light tracking-widest group-hover:text-black transition-colors duration-500">JOIN THE JOURNEY</span>
-              <div className="absolute inset-0 bg-white transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-              <div className="absolute inset-0 border border-white opacity-40 group-hover:opacity-0 transition-opacity duration-500" />
-            </Link>
-          </div>
-        </div>
+          <Link href="/login" className="btn btn-primary text-base py-3 px-8 inline-flex">
+            Join the Journey
+            <ArrowRight size={18} />
+          </Link>
+        </motion.div>
       </section>
 
       {/* === Footer === */}
-      <footer className="relative z-10 py-12 text-center border-t border-white border-opacity-10">
-        <div className="space-y-4">
-          <div className="flex items-center justify-center gap-6">
-            <span className="text-xs opacity-30">侘</span>
-            <span className="text-xs opacity-30">·</span>
-            <span className="text-xs opacity-30">寂</span>
+      <footer className="relative z-10 py-10 border-t border-white/5">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Image
+              src="/favicon.ico"
+              alt="Logo"
+              width={24}
+              height={24}
+              className="w-6 h-6 opacity-50"
+            />
+            <span className="text-sm text-white/30">© {new Date().getFullYear()} All rights reserved</span>
           </div>
-          <p className="text-xs opacity-20">Wabi-Sabi · Finding beauty in imperfection</p>
-          <p className="text-xs opacity-40">
-            © {new Date().getFullYear()} Minsoto. All rights reserved.
-          </p>
+          <div className="flex items-center gap-6 text-xs text-white/30">
+            <span>侘</span>
+            <span>·</span>
+            <span>寂</span>
+            <span className="ml-2">Wabi-Sabi</span>
+          </div>
         </div>
       </footer>
     </div>

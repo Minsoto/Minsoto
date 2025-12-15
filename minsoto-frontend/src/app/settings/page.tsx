@@ -64,34 +64,29 @@ export default function SettingsPage() {
     };
 
     if (!_hasHydrated) {
-        // ... (loading state same as before)
         return (
-            <div className="min-h-screen bg-black flex items-center justify-center">
-                <div
-                    className="w-16 h-16 border-2 border-white animate-spin"
-                    style={{ borderRadius: '50% 0 50% 0' }}
-                />
+            <div className="min-h-screen bg-[var(--background)] flex items-center justify-center">
+                <div className="animate-spin w-8 h-8 border-2 border-white/30 rounded-full border-t-transparent" />
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-black text-white">
+        <div className="min-h-screen bg-[var(--background)] text-white">
             <Navigation />
 
-            <main className="max-w-2xl mx-auto px-6 py-8">
+            {/* Spacer for fixed nav */}
+            <div className="h-16" />
+
+            <main className="container-narrow py-8">
                 {/* Header */}
-                <div className="mb-8 flex items-center gap-3">
-                    <Settings size={24} className="text-white/70" />
-                    <h1 className="text-2xl font-light tracking-wide">Settings</h1>
+                <div className="mb-8 animate-fadeIn flex items-center gap-3">
+                    <Settings size={24} className="text-white/50" />
+                    <h1 className="heading-lg">Settings</h1>
                 </div>
 
                 {/* Account Section */}
-                <section className="border border-white/20 p-6 mb-6 relative">
-                    <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white" />
-                    <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-white" />
-                    <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-white" />
-                    <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-white" />
+                <section className="glass-panel rounded-xl p-6 mb-6">
 
                     <h2 className="text-xs font-light tracking-widest opacity-70 mb-6 flex items-center gap-2">
                         <User size={14} />

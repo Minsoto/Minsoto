@@ -44,14 +44,17 @@ export default function ConnectionsPage() {
     ];
 
     return (
-        <div className="min-h-screen bg-black text-white">
+        <div className="min-h-screen bg-[var(--background)] text-white">
             <Navigation />
 
-            <main className="max-w-4xl mx-auto px-6 py-8">
+            {/* Spacer for fixed nav */}
+            <div className="h-16" />
+
+            <main className="container-narrow py-8">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-3xl font-light tracking-wide mb-2">Connections</h1>
-                    <p className="text-white/50">Manage your network</p>
+                <div className="mb-8 animate-fadeIn">
+                    <h1 className="heading-lg">Connections</h1>
+                    <p className="text-white/50 mt-1">Manage your network</p>
                 </div>
 
                 {/* Tabs */}
@@ -81,13 +84,13 @@ export default function ConnectionsPage() {
 
                 {/* Content */}
                 {loadingConnections ? (
-                    <div className="text-center py-12 text-white/50">
-                        Loading...
+                    <div className="flex items-center justify-center py-20">
+                        <div className="animate-spin w-8 h-8 border-2 border-white/30 rounded-full border-t-transparent" />
                     </div>
                 ) : activeTab === 'pending' ? (
                     // Pending Requests
                     pendingReceived.length === 0 ? (
-                        <div className="text-center py-12 border border-white/10">
+                        <div className="text-center py-16 glass-panel rounded-xl">
                             <p className="text-white/50 mb-2">No pending requests</p>
                             <a href="/discover" className="text-white/70 hover:text-white underline text-sm">
                                 Discover new connections
@@ -108,7 +111,7 @@ export default function ConnectionsPage() {
                 ) : (
                     // Connections List
                     filteredConnections.length === 0 ? (
-                        <div className="text-center py-12 border border-white/10">
+                        <div className="text-center py-16 glass-panel rounded-xl">
                             <p className="text-white/50 mb-2">
                                 {activeTab === 'friends' ? 'No friends yet' : 'No connections yet'}
                             </p>

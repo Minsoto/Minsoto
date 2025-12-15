@@ -1,25 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Repeat } from 'lucide-react';
+import { Check, Repeat, Flame, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { useDashboardStore } from '@/stores/dashboardStore';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 
 export default function TodaysFocus() {
-    const { focusTasks, focusHabits, fetchFocus, fetchStats } = useDashboardStore();
+    const { focusTasks, focusHabits, upcomingTasks, fetchFocus, fetchStats } = useDashboardStore();
     const [loading, setLoading] = useState<string | null>(null);
+    const [showUpcoming, setShowUpcoming] = useState(false);
 
     const handleTaskToggle = async (taskId: string, currentStatus: string) => {
         setLoading(taskId);
         try {
             const newStatus = currentStatus === 'completed' ? 'todo' : 'completed';
-            // Optimistic update logic would go here if we had a setter, but for now we rely on re-fetch
-
-            // Call API
             await api.patch(`/tasks/${taskId}/`, { status: newStatus });
-
-            // Refresh
             await Promise.all([fetchFocus(), fetchStats()]);
         } catch (error) {
             console.error('Task toggle failed', error);
@@ -44,41 +41,67 @@ export default function TodaysFocus() {
         }
     };
 
-    // Sort: incomplete first
+    // Sort tasks: incomplete first
     const sortedTasks = [...(focusTasks || [])].sort((a, b) => {
         if (a.status === b.status) return 0;
         return a.status === 'completed' ? 1 : -1;
     });
 
+    // Sort habits: by streak (highest first), then incomplete first
     const sortedHabits = [...(focusHabits || [])].sort((a, b) => {
-        if (a.completed_today === b.completed_today) return 0;
-        return a.completed_today ? 1 : -1;
+        // First by completion status (incomplete first)
+        if (a.completed_today !== b.completed_today) {
+            return a.completed_today ? 1 : -1;
+        }
+        // Then by streak (highest first)
+        return (b.current_streak || 0) - (a.current_streak || 0);
     });
 
-    return (
-        <div className="glass-panel rounded-2xl h-full flex flex-col overflow-hidden relative">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 blur-[80px] rounded-full pointer-events-none" />
+    // Get priority color
+    const getPriorityColor = (priority?: string) => {
+        switch (priority) {
+            case 'high': return 'bg-red-500';
+            case 'medium': return 'bg-amber-500';
+            case 'low': return 'bg-emerald-500';
+            default: return 'bg-white/20';
+        }
+    };
 
+    // Format date for upcoming
+    const formatDate = (dateStr?: string) => {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        const today = new Date();
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+
+        if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+        return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    };
+
+    return (
+        <div className="glass-panel rounded-2xl h-full flex flex-col overflow-hidden">
             {/* Header */}
-            <div className="p-6 pb-2 relative z-10 flex justify-between items-end border-b border-white/5">
+            <div className="p-5 pb-4 flex justify-between items-center border-b border-white/5">
                 <div>
-                    <h2 className="text-xl font-medium tracking-tight text-white">Daily Control</h2>
-                    <p className="text-xs text-white/40 mt-1">Manage your active priorities</p>
+                    <h2 className="text-lg font-semibold text-white">Daily Focus</h2>
+                    <p className="text-xs text-white/40 mt-0.5">Your active priorities</p>
                 </div>
                 <div className="text-right">
-                    <div className="text-xs font-mono text-cyan-400">
-                        {focusTasks.filter(t => t.status === 'completed').length} / {focusTasks.length}
+                    <div className="text-sm font-medium text-white">
+                        {focusTasks.filter(t => t.status === 'completed').length}/{focusTasks.length}
                     </div>
+                    <div className="text-xs text-white/40">completed</div>
                 </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 relative z-10 custom-scrollbar">
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
 
                 {/* TASKS SECTION */}
                 <div>
-                    <div className="flex items-center gap-2 mb-3 px-2">
-                        <Check size={14} className="text-blue-400" />
-                        <h3 className="text-xs font-bold tracking-widest text-white/50">TASKS</h3>
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                        <Check size={14} className="text-white/40" />
+                        <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide">Today&apos;s Tasks</h3>
                     </div>
 
                     <div className="space-y-2">
@@ -89,29 +112,32 @@ export default function TodaysFocus() {
                                     layout
                                     initial={{ opacity: 0, y: 10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className={`group flex items-center gap-3 p-3 rounded-xl border transition-all duration-200 ${task.status === 'completed'
-                                        ? 'bg-white/5 border-transparent opacity-50'
-                                        : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
+                                    className={`group flex items-center gap-3 p-3 rounded-xl transition-all ${task.status === 'completed'
+                                        ? 'bg-white/5 opacity-50'
+                                        : 'bg-white/5 hover:bg-white/10'
                                         }`}
                                 >
+                                    {/* Checkbox */}
                                     <div className="relative flex-shrink-0">
                                         <input
                                             type="checkbox"
                                             checked={task.status === 'completed'}
                                             onChange={() => handleTaskToggle(task.id, task.status)}
-                                            className="peer appearance-none w-5 h-5 rounded-md border-2 border-white/20 checked:bg-blue-500 checked:border-blue-500 transition-all cursor-pointer checkbox-pop"
+                                            className="peer appearance-none w-5 h-5 rounded-md border-2 border-white/20 checked:bg-white checked:border-white transition-all cursor-pointer"
                                             disabled={loading === task.id}
                                         />
-                                        <Check size={12} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity" />
+                                        <Check size={12} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-black opacity-0 peer-checked:opacity-100 pointer-events-none" />
                                     </div>
 
-                                    <span className={`flex-1 text-sm font-medium transition-colors ${task.status === 'completed' ? 'text-white/30 line-through' : 'text-white/90'
+                                    {/* Title */}
+                                    <span className={`flex-1 text-sm transition-colors ${task.status === 'completed' ? 'text-white/30 line-through' : 'text-white/90'
                                         }`}>
                                         {task.title}
                                     </span>
 
-                                    {task.priority === 'high' && (
-                                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                                    {/* Priority indicator */}
+                                    {task.priority && (
+                                        <span className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
                                     )}
                                 </motion.div>
                             ))}
@@ -119,41 +145,117 @@ export default function TodaysFocus() {
 
                         {sortedTasks.length === 0 && (
                             <div className="text-center py-8 border border-dashed border-white/10 rounded-xl">
-                                <p className="text-sm text-white/30">No active tasks</p>
+                                <p className="text-sm text-white/30">No tasks for today</p>
                             </div>
                         )}
                     </div>
                 </div>
 
+                {/* UPCOMING TASKS SECTION */}
+                {(upcomingTasks?.length || 0) > 0 && (
+                    <div>
+                        <button
+                            onClick={() => setShowUpcoming(!showUpcoming)}
+                            className="flex items-center gap-2 mb-3 px-1 w-full text-left group"
+                        >
+                            <Calendar size={14} className="text-white/40" />
+                            <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide flex-1">
+                                Upcoming ({upcomingTasks?.length || 0})
+                            </h3>
+                            {showUpcoming ? (
+                                <ChevronUp size={14} className="text-white/30" />
+                            ) : (
+                                <ChevronDown size={14} className="text-white/30" />
+                            )}
+                        </button>
+
+                        <AnimatePresence>
+                            {showUpcoming && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: 'auto', opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="space-y-2 overflow-hidden"
+                                >
+                                    {upcomingTasks?.map((task) => (
+                                        <div
+                                            key={task.id}
+                                            className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/5"
+                                        >
+                                            <div className={`w-2 h-2 rounded-full ${getPriorityColor(task.priority)}`} />
+                                            <span className="flex-1 text-sm text-white/60">{task.title}</span>
+                                            <span className="text-xs text-white/30">{formatDate(task.due_date ?? undefined)}</span>
+                                        </div>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                )}
+
                 {/* HABITS SECTION */}
                 <div>
-                    <div className="flex items-center gap-2 mb-3 px-2">
-                        <Repeat size={14} className="text-purple-400" />
-                        <h3 className="text-xs font-bold tracking-widest text-white/50">HABITS</h3>
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                        <Repeat size={14} className="text-white/40" />
+                        <h3 className="text-xs font-medium text-white/40 uppercase tracking-wide">Habits</h3>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    <div className="space-y-2">
                         {sortedHabits.map((habit) => (
                             <button
                                 key={habit.id}
                                 onClick={() => handleHabitToggle(habit.id, habit.completed_today || false)}
                                 disabled={loading === habit.id}
-                                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${habit.completed_today
-                                    ? 'bg-purple-500/20 border-purple-500/50'
-                                    : 'bg-white/5 border-white/5 hover:bg-white/10'
+                                className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${habit.completed_today
+                                    ? 'bg-white/10 border border-white/20'
+                                    : 'bg-white/5 border border-transparent hover:bg-white/10'
                                     }`}
                             >
-                                <span className={`text-sm ${habit.completed_today ? 'text-purple-200' : 'text-white/70'}`}>
-                                    {habit.name}
-                                </span>
-                                <div className={`w-2 h-2 rounded-full transition-all ${habit.completed_today
-                                    ? 'bg-purple-400 shadow-[0_0_8px_rgba(192,132,252,0.6)]'
-                                    : 'bg-white/10'
-                                    }`} />
+                                {/* Image or Placeholder */}
+                                <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white/5 flex items-center justify-center">
+                                    {habit.image_url ? (
+                                        <Image
+                                            src={habit.image_url}
+                                            alt={habit.name}
+                                            width={40}
+                                            height={40}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <Repeat size={16} className="text-white/20" />
+                                    )}
+                                </div>
+
+                                {/* Name and streak */}
+                                <div className="flex-1 min-w-0">
+                                    <div className={`text-sm truncate ${habit.completed_today ? 'text-white' : 'text-white/70'
+                                        }`}>
+                                        {habit.name}
+                                    </div>
+                                    {(habit.current_streak || 0) > 0 && (
+                                        <div className="flex items-center gap-1 mt-0.5">
+                                            <Flame size={12} className="text-amber-400" />
+                                            <span className="text-xs text-amber-400/80">
+                                                {habit.current_streak} day{habit.current_streak !== 1 ? 's' : ''}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Completion indicator */}
+                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${habit.completed_today
+                                    ? 'bg-white border-white'
+                                    : 'border-white/20'
+                                    }`}>
+                                    {habit.completed_today && (
+                                        <Check size={12} className="text-black" />
+                                    )}
+                                </div>
                             </button>
                         ))}
+
                         {sortedHabits.length === 0 && (
-                            <div className="col-span-2 text-center py-6 border border-dashed border-white/10 rounded-xl">
+                            <div className="text-center py-8 border border-dashed border-white/10 rounded-xl">
                                 <p className="text-sm text-white/30">No habits tracked</p>
                             </div>
                         )}

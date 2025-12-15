@@ -2,15 +2,27 @@
 
 import { useAuthStore } from '@/stores/authStore';
 import { useDashboardStore } from '@/stores/dashboardStore';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
 import TodaysFocus from '@/components/dashboard/TodaysFocus';
 import QuickActions from '@/components/dashboard/QuickActions';
 import StatsWidget from '@/components/dashboard/StatsWidget';
 
+function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+}
+
 export default function DashboardPage() {
-    const { isAuthenticated, _hasHydrated } = useAuthStore();
+    const { user, isAuthenticated, _hasHydrated } = useAuthStore();
     const { fetchFocus, fetchStats } = useDashboardStore();
+    const [greeting, setGreeting] = useState('');
+
+    useEffect(() => {
+        setGreeting(getGreeting());
+    }, []);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -21,34 +33,35 @@ export default function DashboardPage() {
 
     if (!_hasHydrated) return null;
 
+    const firstName = user?.first_name || user?.username || 'there';
+
     return (
-        <div className="min-h-screen bg-black text-white selection:bg-cyan-500/30">
+        <div className="min-h-screen bg-[var(--background)] text-white selection:bg-cyan-500/30">
             <Navigation />
 
-            <main className="container mx-auto px-4 md:px-6 py-6 pb-20">
+            {/* Spacer for fixed nav */}
+            <div className="h-16" />
+
+            <main className="container-wide py-8">
                 {/* Header Section */}
-                <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
-                            Command Center
-                        </h1>
-                        <p className="text-white/40 text-sm mt-1">Overview of your productivity metrics</p>
-                    </div>
-                    <div className="text-right hidden md:block">
-                        <div className="text-xs font-mono text-cyan-400 opacity-60">SYSTEM STATUS: ONLINE</div>
-                    </div>
+                <div className="mb-8 animate-fadeIn">
+                    <h1 className="heading-lg text-white">
+                        {greeting}, <span className="text-gradient">{firstName}</span>
+                    </h1>
+                    <p className="text-white/40 mt-1">
+                        Here&apos;s your productivity overview
+                    </p>
                 </div>
 
-                {/* Main Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-6 h-auto md:h-[600px]">
-
-                    {/* Left Col - Core Control (Tasks/Habits) */}
-                    <div className="md:col-span-2 lg:col-span-2 h-[500px] md:h-full">
+                {/* Main Grid - Bento Style */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Left Col - Today's Focus (Main panel) */}
+                    <div className="lg:col-span-2 min-h-[500px]">
                         <TodaysFocus />
                     </div>
 
                     {/* Right Col - Stats & Actions */}
-                    <div className="md:col-span-2 lg:col-span-2 flex flex-col gap-6 h-full">
+                    <div className="flex flex-col gap-6">
                         <div className="flex-1">
                             <StatsWidget />
                         </div>

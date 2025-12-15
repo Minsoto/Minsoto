@@ -28,6 +28,7 @@ interface FocusHabit {
     completed_today: boolean;
     current_streak: number;
     time: string | null;
+    image_url?: string;
 }
 
 interface DashboardStats {
@@ -47,6 +48,7 @@ interface DashboardState {
     loading: boolean;
     focusTasks: FocusTask[];
     focusHabits: FocusHabit[];
+    upcomingTasks: FocusTask[];
     stats: DashboardStats | null;
 
     // Actions
@@ -63,6 +65,7 @@ export const useDashboardStore = create<DashboardState>()((set) => ({
     loading: false,
     focusTasks: [],
     focusHabits: [],
+    upcomingTasks: [],
     stats: null,
 
     fetchDashboard: async () => {
@@ -83,8 +86,9 @@ export const useDashboardStore = create<DashboardState>()((set) => ({
         try {
             const response = await api.get('/dashboard/focus/');
             set({
-                focusTasks: response.data.tasks,
-                focusHabits: response.data.habits
+                focusTasks: response.data.tasks || [],
+                focusHabits: response.data.habits || [],
+                upcomingTasks: response.data.upcoming_tasks || []
             });
         } catch (error) {
             console.error('Failed to fetch focus:', error);
