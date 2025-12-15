@@ -6,6 +6,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { useConnectionsStore } from '@/stores/connectionsStore';
 import ConnectionCard from '@/components/connections/ConnectionCard';
 import Navigation from '@/components/Navigation';
+import { LoadingSpinner, ErrorState, EmptyState, CardLoading } from '@/components/ui/LoadingStates';
+import { Users, UserPlus, Clock } from 'lucide-react';
 
 type TabType = 'all' | 'friends' | 'pending';
 
@@ -16,6 +18,7 @@ export default function ConnectionsPage() {
         connections,
         pendingReceived,
         loadingConnections,
+        error,
         fetchConnections,
         fetchPendingConnections
     } = useConnectionsStore();
@@ -33,14 +36,19 @@ export default function ConnectionsPage() {
         fetchPendingConnections();
     }, [isAuthenticated, router, fetchConnections, fetchPendingConnections, _hasHydrated]);
 
+    const handleRetry = () => {
+        fetchConnections();
+        fetchPendingConnections();
+    };
+
     const filteredConnections = activeTab === 'friends'
         ? connections.filter(c => c.connection_type === 'friend')
         : connections;
 
-    const tabs: { id: TabType; label: string; count?: number }[] = [
-        { id: 'all', label: 'All', count: connections.length },
-        { id: 'friends', label: 'Friends', count: connections.filter(c => c.connection_type === 'friend').length },
-        { id: 'pending', label: 'Pending', count: pendingReceived.length },
+    const tabs: { id: TabType; label: string; count?: number; icon: React.ReactNode }[] = [
+        { id: 'all', label: 'All', count: connections.length, icon: <Users size={14} /> },
+        { id: 'friends', label: 'Friends', count: connections.filter(c => c.connection_type === 'friend').length, icon: <UserPlus size={14} /> },
+        { id: 'pending', label: 'Pending', count: pendingReceived.length, icon: <Clock size={14} /> },
     ];
 
     return (
@@ -64,16 +72,20 @@ export default function ConnectionsPage() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             className={`
-                px-6 py-3 text-sm font-medium transition-colors relative
-                ${activeTab === tab.id
+                                flex items-center gap-2 px-6 py-3 text-sm font-medium transition-colors relative
+                                ${activeTab === tab.id
                                     ? 'text-white'
                                     : 'text-white/50 hover:text-white/70'
                                 }
-              `}
+                            `}
                         >
+                            {tab.icon}
                             {tab.label}
                             {tab.count !== undefined && tab.count > 0 && (
-                                <span className="ml-2 text-white/40">({tab.count})</span>
+                                <span className={`ml-1 px-1.5 py-0.5 text-xs rounded-full ${activeTab === tab.id ? 'bg-white/20' : 'bg-white/10'
+                                    }`}>
+                                    {tab.count}
+                                </span>
                             )}
                             {activeTab === tab.id && (
                                 <div className="absolute bottom-0 left-0 right-0 h-px bg-white" />
@@ -84,18 +96,32 @@ export default function ConnectionsPage() {
 
                 {/* Content */}
                 {loadingConnections ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="animate-spin w-8 h-8 border-2 border-white/30 rounded-full border-t-transparent" />
+                    <div className="py-12">
+                        <LoadingSpinner size="lg" text="Loading connections..." className="mb-8" />
+                        <div className="space-y-3">
+                            {[1, 2, 3].map(i => (
+                                <CardLoading key={i} />
+                            ))}
+                        </div>
                     </div>
+                ) : error ? (
+                    <ErrorState
+                        message="Failed to load connections"
+                        onRetry={handleRetry}
+                        className="py-16 glass-panel rounded-xl"
+                    />
                 ) : activeTab === 'pending' ? (
                     // Pending Requests
                     pendingReceived.length === 0 ? (
-                        <div className="text-center py-16 glass-panel rounded-xl">
-                            <p className="text-white/50 mb-2">No pending requests</p>
-                            <a href="/discover" className="text-white/70 hover:text-white underline text-sm">
-                                Discover new connections
-                            </a>
-                        </div>
+                        <EmptyState
+                            icon={<Clock size={48} />}
+                            message="No pending requests"
+                            action={{
+                                label: 'Discover new connections',
+                                onClick: () => router.push('/discover')
+                            }}
+                            className="py-16 glass-panel rounded-xl"
+                        />
                     ) : (
                         <div className="space-y-3">
                             {pendingReceived.map(connection => (
@@ -111,14 +137,15 @@ export default function ConnectionsPage() {
                 ) : (
                     // Connections List
                     filteredConnections.length === 0 ? (
-                        <div className="text-center py-16 glass-panel rounded-xl">
-                            <p className="text-white/50 mb-2">
-                                {activeTab === 'friends' ? 'No friends yet' : 'No connections yet'}
-                            </p>
-                            <a href="/discover" className="text-white/70 hover:text-white underline text-sm">
-                                Discover people to connect with
-                            </a>
-                        </div>
+                        <EmptyState
+                            icon={<Users size={48} />}
+                            message={activeTab === 'friends' ? 'No friends yet' : 'No connections yet'}
+                            action={{
+                                label: 'Discover people to connect with',
+                                onClick: () => router.push('/discover')
+                            }}
+                            className="py-16 glass-panel rounded-xl"
+                        />
                     ) : (
                         <div className="space-y-3">
                             {filteredConnections.map(connection => (

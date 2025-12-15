@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { Edit3, MessageSquare, AlertTriangle, Camera } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
 
@@ -29,22 +28,10 @@ interface ProfileSidebarProps {
 
 // URL validation helper
 const isValidImageUrl = (urlString: string): boolean => {
-  if (!urlString) return true; // Empty is valid (clears the image)
+  if (!urlString) return true;
   try {
-    const urlObj = new URL(urlString);
-    const validExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp'];
-    const hasValidExtension = validExtensions.some(ext =>
-      urlObj.pathname.toLowerCase().endsWith(ext)
-    );
-    const isImageService = urlString.includes('imgur.com') ||
-      urlString.includes('cloudinary.com') ||
-      urlString.includes('unsplash.com') ||
-      urlString.includes('pexels.com') ||
-      urlString.includes('giphy.com') ||
-      urlString.includes('tenor.com') ||
-      urlString.includes('googleusercontent.com') ||
-      urlString.includes('githubusercontent.com');
-    return hasValidExtension || isImageService || urlObj.protocol === 'data:';
+    new URL(urlString);
+    return true; // Accept any valid URL - we'll handle errors on load
   } catch {
     return false;
   }
@@ -77,7 +64,7 @@ export default function ProfileSidebar({
 
   const handleSaveBanner = () => {
     if (newBannerUrl && !isValidImageUrl(newBannerUrl)) {
-      setUrlError('Unsupported link. Please use a valid image URL.');
+      setUrlError('Please enter a valid URL.');
       return;
     }
     setUrlError('');
@@ -88,7 +75,7 @@ export default function ProfileSidebar({
 
   const handleSaveAvatar = () => {
     if (newAvatarUrl && !isValidImageUrl(newAvatarUrl)) {
-      setAvatarUrlError('Unsupported link. Please use a valid image URL.');
+      setAvatarUrlError('Please enter a valid URL.');
       return;
     }
     setAvatarUrlError('');
@@ -101,31 +88,21 @@ export default function ProfileSidebar({
     <div className="w-full lg:w-[340px] p-6 flex flex-col gap-6">
       {/* Profile Card */}
       <div className="glass-panel rounded-2xl overflow-hidden relative">
-        {/* Banner */}
+        {/* Banner - using regular img for user content */}
         <div className="h-24 relative bg-gradient-to-br from-white/10 to-white/5">
           {bannerUrl && !bannerError ? (
-            bannerUrl.toLowerCase().includes('.gif') ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={bannerUrl}
-                alt="Banner"
-                className="absolute inset-0 w-full h-full object-cover"
-                onError={() => setBannerError(true)}
-              />
-            ) : (
-              <Image
-                src={bannerUrl}
-                alt="Banner"
-                fill
-                className="object-cover"
-                onError={() => setBannerError(true)}
-              />
-            )
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={bannerUrl}
+              alt="Banner"
+              className="absolute inset-0 w-full h-full object-cover"
+              onError={() => setBannerError(true)}
+            />
           ) : bannerError ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <AlertTriangle size={20} className="text-red-400 mx-auto mb-1" />
-                <p className="text-red-400 text-xs">Unsupported link</p>
+                <p className="text-red-400 text-xs">Failed to load</p>
               </div>
             </div>
           ) : null}
@@ -135,7 +112,7 @@ export default function ProfileSidebar({
           {isOwner && (
             <button
               onClick={() => setIsEditingBanner(true)}
-              className="absolute top-3 right-3 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white/60 hover:text-white transition-all"
+              className="absolute top-3 right-3 p-2 bg-black/40 hover:bg-black/60 rounded-full text-white/60 hover:text-white transition-all z-10"
               title="Edit Banner"
             >
               <Edit3 size={12} />
@@ -143,28 +120,18 @@ export default function ProfileSidebar({
           )}
         </div>
 
-        {/* Avatar - overlapping banner */}
+        {/* Avatar - using regular img for user content */}
         <div className="px-5 -mt-10 relative z-10">
           <div className="relative group">
             <div className="w-20 h-20 rounded-full border-4 border-[var(--background)] bg-[var(--glass-bg)] flex items-center justify-center overflow-hidden">
               {user.profile_picture_url && !avatarError ? (
-                user.profile_picture_url.toLowerCase().includes('.gif') ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={user.profile_picture_url}
-                    alt={user.username}
-                    className="w-full h-full object-cover"
-                    onError={() => setAvatarError(true)}
-                  />
-                ) : (
-                  <Image
-                    src={user.profile_picture_url}
-                    alt={user.username}
-                    fill
-                    className="object-cover"
-                    onError={() => setAvatarError(true)}
-                  />
-                )
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.profile_picture_url}
+                  alt={user.username}
+                  className="w-full h-full object-cover"
+                  onError={() => setAvatarError(true)}
+                />
               ) : avatarError ? (
                 <AlertTriangle size={24} className="text-red-400" />
               ) : (
@@ -268,10 +235,10 @@ export default function ProfileSidebar({
               type="text"
               value={newBannerUrl}
               onChange={(e) => { setNewBannerUrl(e.target.value); setUrlError(''); }}
-              placeholder="https://... (.jpg, .png, .gif, .webp)"
+              placeholder="Paste any image URL..."
               className="input mb-2"
             />
-            <p className="text-[10px] text-white/40 mb-2">Supported: jpg, png, gif, webp, svg</p>
+            <p className="text-[10px] text-white/40 mb-2">Paste a direct link to any image</p>
             {urlError && (
               <div className="flex items-center gap-2 mb-3 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
                 <AlertTriangle size={14} className="text-red-400" />
@@ -305,10 +272,10 @@ export default function ProfileSidebar({
               type="text"
               value={newAvatarUrl}
               onChange={(e) => { setNewAvatarUrl(e.target.value); setAvatarUrlError(''); }}
-              placeholder="https://... (.jpg, .png, .gif, .webp)"
+              placeholder="Paste any image URL..."
               className="input mb-2"
             />
-            <p className="text-[10px] text-white/40 mb-2">Supported: jpg, png, gif, webp, svg</p>
+            <p className="text-[10px] text-white/40 mb-2">Paste a direct link to any image</p>
             {avatarUrlError && (
               <div className="flex items-center gap-2 mb-3 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
                 <AlertTriangle size={14} className="text-red-400" />

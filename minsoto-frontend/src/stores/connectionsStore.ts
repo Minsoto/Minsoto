@@ -13,6 +13,7 @@ interface ConnectionsState {
     pendingReceived: Connection[];
     pendingSent: Connection[];
     loadingConnections: boolean;
+    error: string | null;
 
     // Organizations
     myOrganizations: OrganizationMembership[];
@@ -40,16 +41,18 @@ export const useConnectionsStore = create<ConnectionsState>()((set) => ({
     pendingReceived: [],
     pendingSent: [],
     loadingConnections: false,
+    error: null,
     myOrganizations: [],
     loadingOrganizations: false,
 
     fetchConnections: async () => {
-        set({ loadingConnections: true });
+        set({ loadingConnections: true, error: null });
         try {
             const response = await api.get('/connections/');
             set({ connections: response.data });
         } catch (error) {
             console.error('Failed to fetch connections:', error);
+            set({ error: 'Failed to load connections' });
         } finally {
             set({ loadingConnections: false });
         }

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { useConnectionsStore } from '@/stores/connectionsStore';
 import { useAuthStore } from '@/stores/authStore';
 import StatusBadge from '@/components/StatusBadge';
@@ -74,11 +73,10 @@ export default function ConnectionCard({
                 <div className="relative">
                     <div className="w-12 h-12 border border-white/20 flex items-center justify-center text-lg font-light overflow-hidden">
                         {otherUser.profile_picture_url ? (
-                            <Image
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
                                 src={otherUser.profile_picture_url}
                                 alt={otherUser.username}
-                                width={48}
-                                height={48}
                                 className="w-full h-full object-cover"
                             />
                         ) : (

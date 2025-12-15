@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import ConnectionButton from './ConnectionButton';
 import type { DiscoverUser } from '@/types/connections';
 
@@ -18,13 +17,12 @@ export default function UserCard({ user }: UserCardProps) {
             <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-4">
                     {/* Avatar */}
-                    <div className="w-14 h-14 border border-white/20 flex items-center justify-center text-xl font-light bg-white/5">
+                    <div className="w-14 h-14 border border-white/20 flex items-center justify-center text-xl font-light bg-white/5 overflow-hidden">
                         {user.profile_picture_url ? (
-                            <Image
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
                                 src={user.profile_picture_url}
                                 alt={user.username}
-                                width={56}
-                                height={56}
                                 className="w-full h-full object-cover"
                             />
                         ) : (

@@ -104,8 +104,8 @@ Minsoto currently tries to be a habit tracker, task manager, AND social network 
 
 | Item | Status | Notes |
 |------|--------|-------|
-| Loading states for all async operations | 🟡 Partial | Some widgets lack loading states |
-| Error states with recovery actions | 🟡 Partial | Added for images, need elsewhere |
+| Loading states for all async operations | � Done | Reusable components in `/components/ui/LoadingStates.tsx` |
+| Error states with recovery actions | � Done | ErrorState component with retry, applied to pages |
 | Consistent spacing/typography | 🟢 Good | Design system in place |
 | Micro-animations | 🟡 Partial | Framer Motion used, could expand |
 | Accessibility (keyboard nav, screen readers) | 🔴 Not audited | Needs full audit |

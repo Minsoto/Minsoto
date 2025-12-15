@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Target, Plus, Minus, Trash2 } from 'lucide-react';
+import { Target, Plus, Minus, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
 
@@ -28,6 +28,7 @@ const COLOR_MAP: Record<string, { bg: string; bar: string; text: string }> = {
 export default function GoalsWidget() {
     const [goals, setGoals] = useState<Goal[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [updating, setUpdating] = useState<string | null>(null);
 
     useEffect(() => {
@@ -35,11 +36,14 @@ export default function GoalsWidget() {
     }, []);
 
     const fetchGoals = async () => {
+        setLoading(true);
+        setError(null);
         try {
             const response = await api.get('/goals/');
             setGoals(response.data);
-        } catch (error) {
-            console.error('Failed to fetch goals:', error);
+        } catch (err) {
+            console.error('Failed to fetch goals:', err);
+            setError('Failed to load goals');
         } finally {
             setLoading(false);
         }
@@ -138,7 +142,22 @@ export default function GoalsWidget() {
             {/* Goals List */}
             <div className="flex-1 space-y-3 overflow-y-auto custom-scrollbar relative z-10">
                 {loading ? (
-                    <div className="text-center py-8 text-white/40 text-sm">Loading goals...</div>
+                    <div className="flex flex-col items-center justify-center py-8">
+                        <div className="w-6 h-6 border-2 border-white/30 border-t-cyan-400 rounded-full animate-spin mb-2" />
+                        <span className="text-white/40 text-sm">Loading goals...</span>
+                    </div>
+                ) : error ? (
+                    <div className="text-center py-8">
+                        <AlertTriangle size={24} className="text-red-400 mx-auto mb-2" />
+                        <p className="text-red-400 text-sm mb-3">{error}</p>
+                        <button
+                            onClick={fetchGoals}
+                            className="flex items-center gap-2 text-xs text-cyan-400 hover:text-cyan-300 mx-auto"
+                        >
+                            <RefreshCw size={12} />
+                            Try Again
+                        </button>
+                    </div>
                 ) : goals.length === 0 ? (
                     <div className="text-center py-8 border border-dashed border-white/10 rounded-xl">
                         <p className="text-white/40 text-sm">No goals set yet</p>

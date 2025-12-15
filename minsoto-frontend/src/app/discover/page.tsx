@@ -6,8 +6,9 @@ import { useAuthStore } from '@/stores/authStore';
 import api from '@/lib/api';
 import UserCard from '@/components/connections/UserCard';
 import Navigation from '@/components/Navigation';
+import { LoadingSpinner, ErrorState, EmptyState, CardLoading } from '@/components/ui/LoadingStates';
 import type { DiscoverUser, Organization } from '@/types/connections';
-import { Search } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 
 export default function DiscoverPage() {
     const router = useRouter();
@@ -16,6 +17,7 @@ export default function DiscoverPage() {
     const [users, setUsers] = useState<DiscoverUser[]>([]);
     const [organizations, setOrganizations] = useState<Organization[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
     const [selectedOrg, setSelectedOrg] = useState('');
 
@@ -30,6 +32,7 @@ export default function DiscoverPage() {
 
     const fetchUsers = useCallback(async () => {
         setLoading(true);
+        setError(null);
         try {
             const params = new URLSearchParams();
             if (search) params.append('search', search);
@@ -37,8 +40,9 @@ export default function DiscoverPage() {
 
             const response = await api.get(`/discover/?${params.toString()}`);
             setUsers(response.data);
-        } catch (error) {
-            console.error('Failed to fetch users:', error);
+        } catch (err) {
+            console.error('Failed to fetch users:', err);
+            setError('Failed to load users. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -117,14 +121,30 @@ export default function DiscoverPage() {
 
                 {/* Results */}
                 {loading ? (
-                    <div className="flex items-center justify-center py-20">
-                        <div className="animate-spin w-8 h-8 border-2 border-white/30 rounded-full border-t-transparent" />
+                    <div className="py-20">
+                        <LoadingSpinner size="lg" text="Discovering users..." className="mb-8" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {[1, 2, 3, 4, 5, 6].map(i => (
+                                <CardLoading key={i} />
+                            ))}
+                        </div>
                     </div>
+                ) : error ? (
+                    <ErrorState
+                        message={error}
+                        onRetry={fetchUsers}
+                        className="py-16 glass-panel rounded-xl"
+                    />
                 ) : users.length === 0 ? (
-                    <div className="text-center py-16 glass-panel rounded-xl">
-                        <p className="text-white/50 mb-2">No users found</p>
-                        <p className="text-white/30 text-sm">Try adjusting your search or filters</p>
-                    </div>
+                    <EmptyState
+                        icon={<Users size={48} />}
+                        message="No users found"
+                        action={{
+                            label: 'Clear filters',
+                            onClick: () => { setSearch(''); setSelectedOrg(''); }
+                        }}
+                        className="py-16 glass-panel rounded-xl"
+                    />
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {users.map(user => (
@@ -136,4 +156,3 @@ export default function DiscoverPage() {
         </div>
     );
 }
-
