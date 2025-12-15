@@ -5,6 +5,23 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 class HabitStreak(models.Model):
+    FREQUENCY_CHOICES = [
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+    ]
+    
+    COLOR_CHOICES = [
+        ('blue', 'Blue'),
+        ('purple', 'Purple'),
+        ('pink', 'Pink'),
+        ('red', 'Red'),
+        ('orange', 'Orange'),
+        ('yellow', 'Yellow'),
+        ('green', 'Green'),
+        ('cyan', 'Cyan'),
+        ('indigo', 'Indigo'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='habits')
     name = models.CharField(max_length=100)
@@ -13,6 +30,8 @@ class HabitStreak(models.Model):
     longest_streak = models.IntegerField(default=0)
     image_url = models.TextField(blank=True, null=True)
     is_public = models.BooleanField(default=False)
+    frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES, default='daily', db_column='target_frequency')
+    color = models.CharField(max_length=20, choices=COLOR_CHOICES, default='blue')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

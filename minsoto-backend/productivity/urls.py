@@ -19,4 +19,9 @@ urlpatterns = [
     # Tasks
     path('tasks/', views.tasks_list, name='tasks_list'),
     path('tasks/<uuid:task_id>/', views.task_detail, name='task_detail'),
+    
+    # Goals
+    path('goals/', views.goals_list, name='goals_list'),
+    path('goals/<uuid:goal_id>/', views.goal_detail, name='goal_detail'),
 ]
+

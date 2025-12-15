@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import HabitStreak, HabitLog, Task, Dashboard
+from .models import HabitStreak, HabitLog, Task, Dashboard, Goal
 
 class HabitLogSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,7 +14,7 @@ class HabitStreakSerializer(serializers.ModelSerializer):
     class Meta:
         model = HabitStreak
         fields = ['id', 'name', 'description', 'current_streak', 'longest_streak', 'image_url',
-                  'is_public', 'created_at', 'updated_at', 'recent_logs']
+                  'is_public', 'frequency', 'color', 'created_at', 'updated_at', 'recent_logs']
         read_only_fields = ('id', 'created_at', 'updated_at')
     
     def get_recent_logs(self, obj):
@@ -64,3 +64,16 @@ class DashboardStatsSerializer(serializers.Serializer):
     longest_streak = serializers.IntegerField()
     total_tasks = serializers.IntegerField()
     total_habits = serializers.IntegerField()
+
+
+class GoalSerializer(serializers.ModelSerializer):
+    """Serializer for Goals with progress tracking"""
+    progress_percent = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Goal
+        fields = ['id', 'title', 'description', 'target_value', 'current_value', 
+                  'unit', 'deadline', 'category', 'color', 'is_completed', 
+                  'progress_percent', 'created_at', 'updated_at']
+        read_only_fields = ('id', 'is_completed', 'progress_percent', 'created_at', 'updated_at')
+

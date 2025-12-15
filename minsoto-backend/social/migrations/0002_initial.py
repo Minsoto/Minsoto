@@ -77,7 +77,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='connection',
-            constraint=models.CheckConstraint(condition=models.Q(('from_user', models.F('to_user')), _negated=True), name='prevent_self_connection'),
+            constraint=models.CheckConstraint(check=models.Q(('from_user', models.F('to_user')), _negated=True), name='prevent_self_connection'),
         ),
         migrations.AddIndex(
             model_name='organizationmembership',
