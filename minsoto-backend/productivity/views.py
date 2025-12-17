@@ -80,13 +80,16 @@ def habit_log(request, habit_id):
             date=today,
             defaults={'completed': True}
         )
+        
+        # Only update streak if this is a new completion
+        was_incomplete = not created and not log.completed
         if not created:
             log.completed = True
             log.save()
         
-        # Update streak
-        if created or not log.completed:
-            habit.current_streak += 1
+        # Recalculate streak properly from consecutive days
+        if created or was_incomplete:
+            habit.current_streak = _calculate_current_streak(habit, today)
             if habit.current_streak > habit.longest_streak:
                 habit.longest_streak = habit.current_streak
             habit.save()
@@ -104,10 +107,9 @@ def habit_log(request, habit_id):
             log.completed = False
             log.save()
             
-            # Reset streak (simplified)
-            if habit.current_streak > 0:
-                habit.current_streak -= 1
-                habit.save()
+            # Recalculate streak properly
+            habit.current_streak = _calculate_current_streak(habit, today)
+            habit.save()
             
             return Response({
                 'message': 'Habit log removed',
@@ -116,6 +118,28 @@ def habit_log(request, habit_id):
             })
         except HabitLog.DoesNotExist:
             return Response({'message': 'No log to remove', 'completed': False})
+
+
+def _calculate_current_streak(habit, reference_date):
+    """
+    Calculate the current streak by counting consecutive completed days
+    backwards from the reference date.
+    """
+    streak = 0
+    current_date = reference_date
+    
+    while True:
+        try:
+            log = HabitLog.objects.get(habit=habit, date=current_date)
+            if log.completed:
+                streak += 1
+                current_date = current_date - timedelta(days=1)
+            else:
+                break
+        except HabitLog.DoesNotExist:
+            break
+    
+    return streak
 
 
 # =============================================================================
@@ -356,6 +380,131 @@ def widget_data(request):
         'habits': HabitStreakSerializer(habits, many=True).data,
         'interests': UserInterestSerializer(interests, many=True).data,
         'habitGraphData': habit_logs,
+    }
+    
+    return Response(data)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def widget_data_for_user(request, username):
+    """
+    Get widget data for a specific user with visibility filtering.
+    
+    Widget visibility levels:
+    - 'public': Visible to everyone
+    - 'connections': Visible to connections only  
+    - 'friends': Visible to friends only (Phase 2C)
+    - 'private': Only visible to owner (not returned here)
+    
+    Data visibility rules:
+    - Tasks: Filtered by task.is_public = True for non-owners
+    - Habits: Only summary data shown (current streak, completion status)
+    - Interests: Filtered by is_public = True for non-owners
+    """
+    from django.contrib.auth import get_user_model
+    from social.models import Connection, UserInterest
+    
+    User = get_user_model()
+    
+    try:
+        target_user = User.objects.get(username=username)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    
+    is_owner = request.user == target_user
+    
+    # If viewing own profile, return all data (inline to avoid DRF double-wrapping)
+    if is_owner:
+        user = request.user
+        
+        tasks = Task.objects.filter(user=user).only(
+            'id', 'title', 'description', 'status', 'priority', 'due_date', 
+            'is_public', 'created_at', 'updated_at'
+        )
+        habits = HabitStreak.objects.filter(user=user).prefetch_related('logs')
+        interests = UserInterest.objects.filter(user=user).select_related('interest')
+        
+        # Get recent habit logs for graph
+        habit_logs = []
+        if habits.exists():
+            today = timezone.now().date()
+            last_28_days = [today - timedelta(days=i) for i in range(27, -1, -1)]
+            
+            first_habit = habits.first()
+            if first_habit:
+                completed_dates = set(
+                    HabitLog.objects.filter(
+                        habit=first_habit,
+                        date__in=last_28_days,
+                        completed=True
+                    ).values_list('date', flat=True)
+                )
+                habit_logs = [day in completed_dates for day in last_28_days]
+        
+        return Response({
+            'tasks': TaskSerializer(tasks, many=True).data,
+            'habits': HabitStreakSerializer(habits, many=True).data,
+            'interests': UserInterestSerializer(interests, many=True).data,
+            'habitGraphData': habit_logs,
+        })
+    
+    # Check connection status
+    connection = Connection.get_connection_between(request.user, target_user)
+    is_connected = connection and connection.status == 'accepted'
+    is_friend = is_connected and connection.connection_type == 'friend'
+    
+    # Determine visibility level
+    # Highest access: 'public' (everyone), 'connections' (connected), 'friends' (friends only)
+    visibility_levels = ['public']
+    if is_connected:
+        visibility_levels.append('connections')
+    if is_friend:
+        visibility_levels.append('friends')
+    
+    # Get tasks (only public tasks for other users)
+    tasks = Task.objects.filter(user=target_user, is_public=True).only(
+        'id', 'title', 'description', 'status', 'priority', 'due_date',
+        'is_public', 'created_at', 'updated_at'
+    )
+    
+    # Get habits (basic info only - no detailed logs for privacy)
+    habits = HabitStreak.objects.filter(user=target_user).only(
+        'id', 'name', 'current_streak', 'longest_streak', 'color', 'image_url'
+    )
+    
+    # Get public interests only
+    interests = UserInterest.objects.filter(
+        user=target_user, is_public=True
+    ).select_related('interest')
+    
+    # Get habit graph data (show completion pattern, not sensitive data)
+    habit_logs = []
+    if habits.exists():
+        today = timezone.now().date()
+        last_28_days = [today - timedelta(days=i) for i in range(27, -1, -1)]
+        
+        first_habit = habits.first()
+        if first_habit:
+            completed_dates = set(
+                HabitLog.objects.filter(
+                    habit=first_habit,
+                    date__in=last_28_days,
+                    completed=True
+                ).values_list('date', flat=True)
+            )
+            habit_logs = [day in completed_dates for day in last_28_days]
+    
+    data = {
+        'tasks': TaskSerializer(tasks, many=True).data,
+        'habits': HabitStreakSerializer(habits, many=True).data,
+        'interests': UserInterestSerializer(interests, many=True).data,
+        'habitGraphData': habit_logs,
+        '_visibility': {
+            'is_connected': is_connected,
+            'is_friend': is_friend,
+            'access_levels': visibility_levels
+        }
     }
     
     return Response(data)

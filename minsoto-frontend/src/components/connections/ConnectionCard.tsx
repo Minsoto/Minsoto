@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useConnectionsStore } from '@/stores/connectionsStore';
 import { useAuthStore } from '@/stores/authStore';
 import StatusBadge from '@/components/StatusBadge';
@@ -18,6 +19,7 @@ export default function ConnectionCard({
     variant = 'connected'
 }: ConnectionCardProps) {
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
     const { acceptConnection, rejectConnection, removeConnection, upgradeToFriend, confirmFriendUpgrade } = useConnectionsStore();
     const { user } = useAuthStore();
 
@@ -67,8 +69,11 @@ export default function ConnectionCard({
 
     return (
         <div className="border border-white/10 p-4 flex items-center justify-between group hover:border-white/20 transition-colors">
-            {/* User Info */}
-            <div className="flex items-center gap-4">
+            {/* User Info - Clickable area */}
+            <div
+                className="flex items-center gap-4 cursor-pointer flex-1"
+                onClick={() => router.push(`/profile/${otherUser.username}`)}
+            >
                 {/* Avatar */}
                 <div className="relative">
                     <div className="w-12 h-12 border border-white/20 flex items-center justify-center text-lg font-light overflow-hidden">
@@ -93,12 +98,9 @@ export default function ConnectionCard({
 
                 {/* Name & Username */}
                 <div>
-                    <a
-                        href={`/profile/${otherUser.username}`}
-                        className="text-white hover:underline font-medium"
-                    >
+                    <span className="text-white hover:underline font-medium">
                         {otherUser.first_name} {otherUser.last_name}
-                    </a>
+                    </span>
                     <p className="text-white/50 text-sm">@{otherUser.username}</p>
                     {(otherUser as { status_message?: string }).status_message && (
                         <p className="text-white/40 text-xs italic truncate max-w-[150px]">

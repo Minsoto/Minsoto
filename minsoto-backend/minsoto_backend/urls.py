@@ -10,4 +10,5 @@ urlpatterns = [
     path('api/', include('users.urls')),
     path('api/', include('productivity.urls')),
     path('api/', include('social.urls')),
+    path('api/', include('gamification.urls')),
 ]

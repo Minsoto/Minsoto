@@ -10,6 +10,7 @@ urlpatterns = [
     
     # Widgets data
     path('widgets/data/', views.widget_data, name='widget_data'),
+    path('widgets/data/<str:username>/', views.widget_data_for_user, name='widget_data_for_user'),
     
     # Habits
     path('habits/', views.habits_list, name='habits_list'),

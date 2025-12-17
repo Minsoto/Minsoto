@@ -187,7 +187,23 @@ def change_username(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_me(request):
-    serializer = UserSerializer(request.user)
+    user = request.user
+    
+    # Auto-fix: If user has a complete profile but is_setup_complete=False, fix it
+    if not user.is_setup_complete:
+        has_custom_username = user.username and user.username != user.email
+        has_profile = hasattr(user, 'profile') and user.profile is not None
+        has_widgets = (
+            has_profile and 
+            user.profile.layout and 
+            user.profile.layout.get('widgets')
+        )
+        
+        if has_custom_username and has_widgets:
+            user.is_setup_complete = True
+            user.save(update_fields=['is_setup_complete'])
+    
+    serializer = UserSerializer(user)
     return Response(serializer.data)
 
 

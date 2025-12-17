@@ -346,6 +346,9 @@ def send_connection_request(request):
             return Response({'error': 'Already connected'}, status=status.HTTP_400_BAD_REQUEST)
         elif existing.status == 'pending':
             return Response({'error': 'Connection request already pending'}, status=status.HTTP_400_BAD_REQUEST)
+        elif existing.status == 'rejected':
+            # Allow re-request by deleting the rejected connection
+            existing.delete()
     
     connection = Connection.objects.create(
         from_user=request.user,

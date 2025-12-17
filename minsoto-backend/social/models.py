@@ -219,6 +219,10 @@ class Connection(models.Model):
                 name='prevent_self_connection'
             ),
         ]
+        # Note: Bidirectional uniqueness is handled in views via get_connection_between()
+        # A true DB-level bidirectional constraint would require a migration with raw SQL:
+        # CREATE UNIQUE INDEX idx_unique_connection_pair 
+        # ON social_connection(LEAST(from_user_id, to_user_id), GREATEST(from_user_id, to_user_id));
 
     def __str__(self):
         return f"{self.from_user.username} -> {self.to_user.username} ({self.status})"

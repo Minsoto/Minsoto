@@ -20,6 +20,20 @@ interface WidgetLibraryProps {
 // Only functional widgets
 const WIDGET_TEMPLATES: WidgetTemplate[] = [
   {
+    type: 'xp-progress',
+    name: 'XP Progress',
+    description: 'Show your level, XP, and streak multiplier',
+    defaultSize: { w: 2, h: 2 },
+    icon: '⭐'
+  },
+  {
+    type: 'points',
+    name: 'Points Balance',
+    description: 'Display your spendable points and rewards',
+    defaultSize: { w: 1, h: 2 },
+    icon: '🪙'
+  },
+  {
     type: 'streak-showcase',
     name: 'Streak Showcase',
     description: 'Feature a single habit streak with big fire emoji',

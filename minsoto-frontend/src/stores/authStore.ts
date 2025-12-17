@@ -2,12 +2,14 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 interface User {
-  id: number;
+  id: string;  // UUID from backend
   username: string;
   email: string;
   first_name: string;
   last_name: string;
   is_setup_complete: boolean;
+  status?: string;
+  status_message?: string;
 }
 
 interface AuthState {
@@ -57,18 +59,6 @@ export const useAuthStore = create<AuthState>()(
           accessToken: null,
           refreshToken: null,
         });
-
-        // Clear persisted data
-        get().logout = () => {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-          set({
-            isAuthenticated: false,
-            user: null,
-            accessToken: null,
-            refreshToken: null,
-          });
-        };
       },
       updateUser: (user) => {
         set({ user });

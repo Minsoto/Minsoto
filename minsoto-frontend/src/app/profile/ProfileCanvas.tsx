@@ -11,6 +11,8 @@ import InterestsWidget from '../../components/widgets/InterestsWidget';
 import ImageWidget from '../../components/widgets/ImageWidget';
 import StreakShowcaseWidget from '../../components/widgets/StreakShowcaseWidget';
 import TextWidget from '../../components/widgets/TextWidget';
+import XPProgressWidget from '../../components/widgets/XPProgressWidget';
+import PointsWidget from '../../components/widgets/PointsWidget';
 
 const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -83,6 +85,8 @@ export default function ProfileCanvas({
       case 'interests': return <InterestsWidget {...commonProps} interests={widgetData.interests || []} />;
       case 'image': return <ImageWidget {...commonProps} config={widget.config || {}} />;
       case 'text': return <TextWidget {...commonProps} config={widget.config || {}} />;
+      case 'xp-progress': return <XPProgressWidget {...commonProps} />;
+      case 'points': return <PointsWidget {...commonProps} />;
       case 'goals': return <div className="glass-panel h-full p-4 flex items-center justify-center text-white/40 text-sm">Goals (view only)</div>;
       default: return null;
     }

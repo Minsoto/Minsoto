@@ -25,7 +25,12 @@ export default function LoginPage() {
   // Redirect based on authentication inside useEffect (fix jitter/refresh)
   useEffect(() => {
     if (_hasHydrated && isAuthenticated && user) {
-      router.push(`/profile/${user.username}`);
+      // Check if user needs to complete setup
+      if (!user.is_setup_complete) {
+        router.push('/setup-username');
+      } else {
+        router.push(`/profile/${user.username}`);
+      }
     }
     // Dependencies forced to only run on auth or user change
   }, [isAuthenticated, user, router, _hasHydrated]);

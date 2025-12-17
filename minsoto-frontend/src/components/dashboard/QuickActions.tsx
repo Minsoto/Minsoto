@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Target, X, ListTodo, Repeat, Sparkles, Calendar, Image as ImageIcon } from 'lucide-react';
+import { Target, X, ListTodo, Repeat, Sparkles, Calendar, Image as ImageIcon, Coins } from 'lucide-react';
 import api from '@/lib/api';
 import { useDashboardStore } from '@/stores/dashboardStore';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -91,6 +91,7 @@ export default function QuickActions() {
     const [taskPriority, setTaskPriority] = useState<'low' | 'medium' | 'high'>('medium');
     const [taskImageUrl, setTaskImageUrl] = useState('');
     const [showTaskImage, setShowTaskImage] = useState(false);
+    const [taskPointValue, setTaskPointValue] = useState(0);
 
     // Habit modal state
     const [habitModalOpen, setHabitModalOpen] = useState(false);
@@ -99,6 +100,7 @@ export default function QuickActions() {
     const [habitColor, setHabitColor] = useState('blue');
     const [habitImageUrl, setHabitImageUrl] = useState('');
     const [showHabitIcon, setShowHabitIcon] = useState(false);
+    const [habitPointValue, setHabitPointValue] = useState(0);
 
     // Goal modal state
     const [goalModalOpen, setGoalModalOpen] = useState(false);
@@ -118,6 +120,7 @@ export default function QuickActions() {
         setTaskPriority('medium');
         setTaskImageUrl('');
         setShowTaskImage(false);
+        setTaskPointValue(0);
     };
 
     // Reset habit form
@@ -127,6 +130,7 @@ export default function QuickActions() {
         setHabitColor('blue');
         setHabitImageUrl('');
         setShowHabitIcon(false);
+        setHabitPointValue(0);
     };
 
     // Reset goal form
@@ -149,7 +153,8 @@ export default function QuickActions() {
                 status: 'todo',
                 priority: taskPriority,
                 due_date: taskDueDate || null,
-                image_url: taskImageUrl || null
+                image_url: taskImageUrl || null,
+                point_value: taskPointValue
             });
             resetTaskForm();
             setTaskModalOpen(false);
@@ -169,8 +174,10 @@ export default function QuickActions() {
         try {
             await api.post('/habits/', {
                 name: habitName,
-                image_url: habitImageUrl || null
-                // Note: color and frequency could be stored in a JSON config field
+                image_url: habitImageUrl || null,
+                color: habitColor,
+                frequency: habitFrequency,
+                point_value_per_completion: habitPointValue
             });
             resetHabitForm();
             setHabitModalOpen(false);
@@ -342,6 +349,25 @@ export default function QuickActions() {
                                 </div>
                             )}
 
+                            {/* Points Reward */}
+                            <div>
+                                <label className="text-xs font-medium text-white/50 mb-2 block flex items-center gap-1.5">
+                                    <Coins size={12} className="text-yellow-400" />
+                                    Points on Completion
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={500}
+                                        value={taskPointValue}
+                                        onChange={(e) => setTaskPointValue(Math.min(500, parseInt(e.target.value) || 0))}
+                                        className="w-24 px-3 py-2 bg-white/5 border border-white/10 rounded-lg focus:border-yellow-500/50 outline-none text-white text-center"
+                                    />
+                                    <span className="text-xs text-white/40">Max: 500 pts per task</span>
+                                </div>
+                            </div>
+
                             {/* Actions */}
                             <div className="flex gap-3 justify-end pt-3">
                                 <button
@@ -445,6 +471,25 @@ export default function QuickActions() {
                                 </div>
                             )}
 
+                            {/* Points Per Completion */}
+                            <div>
+                                <label className="text-xs font-medium text-white/50 mb-2 block flex items-center gap-1.5">
+                                    <Coins size={12} className="text-yellow-400" />
+                                    Points Per Completion
+                                </label>
+                                <div className="flex items-center gap-3">
+                                    <input
+                                        type="number"
+                                        min={0}
+                                        max={100}
+                                        value={habitPointValue}
+                                        onChange={(e) => setHabitPointValue(Math.min(100, parseInt(e.target.value) || 0))}
+                                        className="w-24 px-3 py-2 bg-white/5 border border-white/10 rounded-lg focus:border-yellow-500/50 outline-none text-white text-center"
+                                    />
+                                    <span className="text-xs text-white/40">+streak bonus (up to 50%)</span>
+                                </div>
+                            </div>
+
                             {/* Actions */}
                             <div className="flex gap-3 justify-end pt-3">
                                 <button
@@ -522,8 +567,8 @@ export default function QuickActions() {
                                             type="button"
                                             onClick={() => setGoalColor(c)}
                                             className={`w-7 h-7 rounded-full bg-${c}-500 transition-all ${goalColor === c
-                                                    ? 'ring-2 ring-offset-2 ring-offset-[#0a0a12] ring-white scale-110'
-                                                    : 'opacity-60 hover:opacity-100'
+                                                ? 'ring-2 ring-offset-2 ring-offset-[#0a0a12] ring-white scale-110'
+                                                : 'opacity-60 hover:opacity-100'
                                                 }`}
                                         />
                                     ))}
@@ -540,8 +585,8 @@ export default function QuickActions() {
                                             type="button"
                                             onClick={() => setGoalCategory(cat)}
                                             className={`px-3 py-1.5 rounded-lg text-xs transition-all ${goalCategory === cat
-                                                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                                    : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10'
+                                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                                                : 'bg-white/5 text-white/50 border border-white/10 hover:bg-white/10'
                                                 }`}
                                         >
                                             {cat.charAt(0).toUpperCase() + cat.slice(1)}

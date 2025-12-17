@@ -32,6 +32,10 @@ class HabitStreak(models.Model):
     is_public = models.BooleanField(default=False)
     frequency = models.CharField(max_length=20, choices=FREQUENCY_CHOICES, default='daily', db_column='target_frequency')
     color = models.CharField(max_length=20, choices=COLOR_CHOICES, default='blue')
+    
+    # Points earned per completion (for reward store)
+    point_value_per_completion = models.PositiveIntegerField(default=0, help_text='Points earned each time this habit is completed')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -84,6 +88,10 @@ class Task(models.Model):
     due_date = models.DateTimeField(null=True, blank=True)
     image_url = models.TextField(blank=True, null=True)
     is_public = models.BooleanField(default=False)
+    
+    # Points earned on completion (for reward store)
+    point_value = models.PositiveIntegerField(default=0, help_text='Points earned when task is completed')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

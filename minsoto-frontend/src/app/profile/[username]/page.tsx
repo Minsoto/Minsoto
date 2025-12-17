@@ -43,12 +43,13 @@ export default function ProfilePage() {
 
   const fetchWidgetData = useCallback(async () => {
     try {
-      const response = await api.get('/widgets/data/');
+      // Fetch widget data for the profile being viewed, not the logged-in user
+      const response = await api.get(`/widgets/data/${username}/`);
       setWidgetData(response.data);
     } catch (error) {
       console.error('Failed to fetch widget data', error);
     }
-  }, []);
+  }, [username]);
 
   useEffect(() => {
     if (!_hasHydrated) return;
