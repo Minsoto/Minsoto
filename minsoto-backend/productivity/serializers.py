@@ -14,7 +14,7 @@ class HabitStreakSerializer(serializers.ModelSerializer):
     class Meta:
         model = HabitStreak
         fields = ['id', 'name', 'description', 'current_streak', 'longest_streak', 'image_url',
-                  'is_public', 'frequency', 'color', 'created_at', 'updated_at', 'recent_logs']
+                  'is_public', 'frequency', 'color', 'point_value_per_completion', 'created_at', 'updated_at', 'recent_logs']
         read_only_fields = ('id', 'created_at', 'updated_at')
     
     def get_recent_logs(self, obj):
@@ -27,7 +27,7 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = ['id', 'title', 'description', 'status', 'priority', 'due_date', 'image_url',
-                  'is_public', 'created_at', 'updated_at']
+                  'is_public', 'point_value', 'created_at', 'updated_at']
         read_only_fields = ('id', 'created_at', 'updated_at')
 
 

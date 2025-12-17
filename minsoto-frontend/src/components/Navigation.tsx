@@ -16,7 +16,8 @@ import {
   ChevronDown,
   Menu,
   X,
-  Bell
+  Bell,
+  Gift
 } from 'lucide-react';
 
 export default function Navigation() {
@@ -46,6 +47,7 @@ export default function Navigation() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/discover', label: 'Discover', icon: Compass },
     { href: '/connections', label: 'Connections', icon: Users },
+    { href: '/rewards', label: 'Rewards', icon: Gift },
   ];
 
   const isActive = (href: string) => pathname === href || pathname?.startsWith(href + '/');
@@ -79,8 +81,8 @@ export default function Navigation() {
                 key={link.href}
                 href={link.href}
                 className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${active
-                    ? 'text-white'
-                    : 'text-white/50 hover:text-white/80 hover:bg-white/5'
+                  ? 'text-white'
+                  : 'text-white/50 hover:text-white/80 hover:bg-white/5'
                   }`}
               >
                 <Icon size={18} />
@@ -117,8 +119,8 @@ export default function Navigation() {
           <Link
             href={`/profile/${user?.username}`}
             className={`hidden md:flex items-center gap-2 p-1.5 rounded-lg transition-all ${pathname?.includes('/profile/')
-                ? 'bg-white/10'
-                : 'hover:bg-white/5'
+              ? 'bg-white/10'
+              : 'hover:bg-white/5'
               }`}
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-purple-500 flex items-center justify-center text-sm font-medium text-white">
@@ -212,8 +214,8 @@ export default function Navigation() {
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-3 px-4 py-3 text-sm rounded-lg transition-colors ${isActive(link.href)
-                        ? 'text-white bg-white/10'
-                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                      ? 'text-white bg-white/10'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
                       }`}
                   >
                     <Icon size={18} />

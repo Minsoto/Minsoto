@@ -1,16 +1,42 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Repeat, Flame, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, Repeat, Flame, Calendar, ChevronDown, ChevronUp, Settings2, X, Coins } from 'lucide-react';
 import { useDashboardStore } from '@/stores/dashboardStore';
+import { useGamificationStore } from '@/stores/gamificationStore';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 
+// Habit colors
+const HABIT_COLORS = [
+    { name: 'blue', bg: 'bg-blue-500' },
+    { name: 'purple', bg: 'bg-purple-500' },
+    { name: 'pink', bg: 'bg-pink-500' },
+    { name: 'red', bg: 'bg-red-500' },
+    { name: 'orange', bg: 'bg-orange-500' },
+    { name: 'yellow', bg: 'bg-yellow-500' },
+    { name: 'green', bg: 'bg-green-500' },
+    { name: 'cyan', bg: 'bg-cyan-500' },
+];
+
+interface EditingHabit {
+    id: string;
+    name: string;
+    color: string;
+    frequency: 'daily' | 'weekly';
+    point_value_per_completion: number;
+}
+
 export default function TodaysFocus() {
     const { focusTasks, focusHabits, upcomingTasks, fetchFocus, fetchStats } = useDashboardStore();
+    const { fetchXP, fetchPoints } = useGamificationStore();
     const [loading, setLoading] = useState<string | null>(null);
     const [showUpcoming, setShowUpcoming] = useState(false);
+
+    // Edit modal state
+    const [editingHabit, setEditingHabit] = useState<EditingHabit | null>(null);
+    const [savingEdit, setSavingEdit] = useState(false);
 
     const handleTaskToggle = async (taskId: string, currentStatus: string) => {
         setLoading(taskId);
@@ -18,6 +44,13 @@ export default function TodaysFocus() {
             const newStatus = currentStatus === 'completed' ? 'todo' : 'completed';
             await api.patch(`/tasks/${taskId}/`, { status: newStatus });
             await Promise.all([fetchFocus(), fetchStats()]);
+            // Refresh XP and points if task was completed
+            if (newStatus === 'completed') {
+                setTimeout(() => {
+                    fetchXP();
+                    fetchPoints();
+                }, 500); // Small delay to let backend process
+            }
         } catch (error) {
             console.error('Task toggle failed', error);
         } finally {
@@ -34,10 +67,47 @@ export default function TodaysFocus() {
                 await api.post(`/habits/${habitId}/log/`);
             }
             await Promise.all([fetchFocus(), fetchStats()]);
+            // Refresh XP and points if habit was logged
+            if (!isCompleted) {
+                setTimeout(() => {
+                    fetchXP();
+                    fetchPoints();
+                }, 500); // Small delay to let backend process
+            }
         } catch (error) {
             console.error('Habit toggle failed', error);
         } finally {
             setLoading(null);
+        }
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const openEditHabit = (habit: any) => {
+        setEditingHabit({
+            id: habit.id,
+            name: habit.name,
+            color: habit.color || 'blue',
+            frequency: habit.frequency || 'daily',
+            point_value_per_completion: habit.point_value_per_completion || 0
+        });
+    };
+
+    const saveHabitEdit = async () => {
+        if (!editingHabit) return;
+        setSavingEdit(true);
+        try {
+            await api.patch(`/habits/${editingHabit.id}/`, {
+                name: editingHabit.name,
+                color: editingHabit.color,
+                frequency: editingHabit.frequency,
+                point_value_per_completion: editingHabit.point_value_per_completion
+            });
+            setEditingHabit(null);
+            await fetchFocus();
+        } catch (error) {
+            console.error('Failed to update habit:', error);
+        } finally {
+            setSavingEdit(false);
         }
     };
 
@@ -202,17 +272,18 @@ export default function TodaysFocus() {
 
                     <div className="space-y-2">
                         {sortedHabits.map((habit) => (
-                            <button
+                            <div
                                 key={habit.id}
-                                onClick={() => handleHabitToggle(habit.id, habit.completed_today || false)}
-                                disabled={loading === habit.id}
-                                className={`w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${habit.completed_today
+                                className={`group w-full flex items-center gap-3 p-3 rounded-xl transition-all text-left ${habit.completed_today
                                     ? 'bg-white/10 border border-white/20'
                                     : 'bg-white/5 border border-transparent hover:bg-white/10'
                                     }`}
                             >
                                 {/* Image or Placeholder */}
-                                <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white/5 flex items-center justify-center">
+                                <div
+                                    className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-white/5 flex items-center justify-center cursor-pointer"
+                                    onClick={() => handleHabitToggle(habit.id, habit.completed_today || false)}
+                                >
                                     {habit.image_url ? (
                                         <Image
                                             src={habit.image_url}
@@ -226,8 +297,11 @@ export default function TodaysFocus() {
                                     )}
                                 </div>
 
-                                {/* Name and streak */}
-                                <div className="flex-1 min-w-0">
+                                {/* Name and streak - clickable to toggle */}
+                                <div
+                                    className="flex-1 min-w-0 cursor-pointer"
+                                    onClick={() => handleHabitToggle(habit.id, habit.completed_today || false)}
+                                >
                                     <div className={`text-sm truncate ${habit.completed_today ? 'text-white' : 'text-white/70'
                                         }`}>
                                         {habit.name}
@@ -242,16 +316,28 @@ export default function TodaysFocus() {
                                     )}
                                 </div>
 
+                                {/* Edit button */}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); openEditHabit(habit); }}
+                                    className="p-1.5 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all"
+                                    title="Edit habit"
+                                >
+                                    <Settings2 size={14} className="text-white/50" />
+                                </button>
+
                                 {/* Completion indicator */}
-                                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${habit.completed_today
-                                    ? 'bg-white border-white'
-                                    : 'border-white/20'
-                                    }`}>
+                                <div
+                                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer ${habit.completed_today
+                                        ? 'bg-white border-white'
+                                        : 'border-white/20'
+                                        }`}
+                                    onClick={() => handleHabitToggle(habit.id, habit.completed_today || false)}
+                                >
                                     {habit.completed_today && (
                                         <Check size={12} className="text-black" />
                                     )}
                                 </div>
-                            </button>
+                            </div>
                         ))}
 
                         {sortedHabits.length === 0 && (
@@ -263,6 +349,122 @@ export default function TodaysFocus() {
                 </div>
 
             </div>
+
+            {/* HABIT EDIT MODAL */}
+            <AnimatePresence>
+                {editingHabit && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0 bg-black/80"
+                            onClick={() => setEditingHabit(null)}
+                        />
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="relative w-full max-w-sm bg-[#0a0a12] border border-white/10 rounded-2xl p-6 z-10"
+                        >
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-semibold text-white">Edit Habit</h3>
+                                <button onClick={() => setEditingHabit(null)} className="p-1 hover:bg-white/10 rounded">
+                                    <X size={18} className="text-white/50" />
+                                </button>
+                            </div>
+
+                            <div className="space-y-4">
+                                {/* Name */}
+                                <div>
+                                    <label className="text-xs text-white/50 mb-1 block">Name</label>
+                                    <input
+                                        type="text"
+                                        value={editingHabit.name}
+                                        onChange={e => setEditingHabit({ ...editingHabit, name: e.target.value })}
+                                        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:border-purple-500 outline-none"
+                                    />
+                                </div>
+
+                                {/* Color */}
+                                <div>
+                                    <label className="text-xs text-white/50 mb-2 block">Color</label>
+                                    <div className="flex gap-2 flex-wrap">
+                                        {HABIT_COLORS.map(c => (
+                                            <button
+                                                key={c.name}
+                                                onClick={() => setEditingHabit({ ...editingHabit, color: c.name })}
+                                                className={`w-8 h-8 rounded-lg ${c.bg} transition-all ${editingHabit.color === c.name
+                                                    ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0a0a12]'
+                                                    : 'opacity-60 hover:opacity-100'
+                                                    }`}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Frequency */}
+                                <div>
+                                    <label className="text-xs text-white/50 mb-2 block">Frequency</label>
+                                    <div className="flex gap-2">
+                                        {(['daily', 'weekly'] as const).map(f => (
+                                            <button
+                                                key={f}
+                                                onClick={() => setEditingHabit({ ...editingHabit, frequency: f })}
+                                                className={`flex-1 py-2 rounded-lg text-sm transition-all ${editingHabit.frequency === f
+                                                    ? 'bg-purple-500/20 text-purple-300 border border-purple-500/50'
+                                                    : 'bg-white/5 text-white/50 border border-white/10'
+                                                    }`}
+                                            >
+                                                {f.charAt(0).toUpperCase() + f.slice(1)}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Points */}
+                                <div>
+                                    <label className="text-xs text-white/50 mb-1 block flex items-center gap-1">
+                                        <Coins size={12} className="text-yellow-400" />
+                                        Points Per Completion
+                                    </label>
+                                    <div className="flex items-center gap-3">
+                                        <input
+                                            type="number"
+                                            min={0}
+                                            max={100}
+                                            value={editingHabit.point_value_per_completion}
+                                            onChange={e => setEditingHabit({
+                                                ...editingHabit,
+                                                point_value_per_completion: Math.min(100, parseInt(e.target.value) || 0)
+                                            })}
+                                            className="w-20 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white text-center focus:border-yellow-500 outline-none"
+                                        />
+                                        <span className="text-xs text-white/40">+streak bonus</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Actions */}
+                            <div className="flex gap-3 justify-end mt-6">
+                                <button
+                                    onClick={() => setEditingHabit(null)}
+                                    className="px-4 py-2 text-white/50 hover:text-white transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={saveHabitEdit}
+                                    disabled={savingEdit}
+                                    className="px-5 py-2 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg font-medium transition-all"
+                                >
+                                    {savingEdit ? 'Saving...' : 'Save'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

@@ -19,6 +19,8 @@ The gamification system provides XP (experience points) for leveling and Points 
 | Log habit (base) | 10 XP |
 | Log habit (7+ day streak) | +5 XP |
 | Log habit (30+ day streak) | +15 XP |
+| **Goal progress update** | 5 XP (1/day/goal) |
+| **Goal completed** | 50 XP |
 
 ### XP Multiplier (Streak Bonus)
 
@@ -29,6 +31,10 @@ The `UserXP.xp_multiplier` applies to all XP earned based on consecutive day str
 Level is calculated using: `level = 1 + floor(total_xp / 100)`
 
 **Daily XP Cap: 500 XP** (anti-spam protection)
+
+### Real-time Updates
+
+The StatsWidget displays XP progress bar. XP refreshes 500ms after task/habit completion via `fetchXP()` in gamificationStore.
 
 ---
 

@@ -15,7 +15,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 from datetime import timedelta
 
-from productivity.models import Task, HabitLog
+from productivity.models import Task, HabitLog, Goal
 from .models import UserXP, XPTransaction, UserPoints, PointTransaction
 
 
@@ -251,4 +251,45 @@ def on_habit_log(sender, instance, created, **kwargs):
                     source_id=instance.id,
                     description=f'Habit: {habit.name}',
                     streak_multiplier=streak_multiplier
+                )
+
+
+@receiver(post_save, sender=Goal)
+def on_goal_save(sender, instance, created, **kwargs):
+    """Award XP when a goal is completed."""
+    if not created:
+        # Check if goal was just completed
+        if instance.is_completed:
+            existing = XPTransaction.objects.filter(
+                user=instance.user,
+                source_type='goal_complete',
+                source_id=instance.id
+            ).exists()
+            
+            if not existing:
+                # Goal completion = 50 XP (significant achievement)
+                award_xp(
+                    user=instance.user,
+                    amount=50,
+                    source_type='goal_complete',
+                    source_id=instance.id,
+                    description=f'Completed goal: {instance.title[:50]}'
+                )
+        # Award XP for goal progress (5 XP per progress update, max 1 per day per goal)
+        else:
+            today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+            already_awarded_today = XPTransaction.objects.filter(
+                user=instance.user,
+                source_type='goal_progress',
+                source_id=instance.id,
+                created_at__gte=today_start
+            ).exists()
+            
+            if not already_awarded_today and instance.current_value > 0:
+                award_xp(
+                    user=instance.user,
+                    amount=5,
+                    source_type='goal_progress',
+                    source_id=instance.id,
+                    description=f'Progress on goal: {instance.title[:50]}'
                 )
