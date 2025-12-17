@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     'productivity',
     'social',
     'gamification',
+    'guilds',
 ]
 
 MIDDLEWARE = [

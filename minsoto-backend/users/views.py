@@ -11,10 +11,59 @@ from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
 
-from social.models import Profile
+from social.models import Profile, Organization, OrganizationMembership, extract_email_domain
 from .serializers import GoogleAuthSerializer, UserSerializer, UsernameSetupSerializer
 
 User = get_user_model()
+
+# Common email providers to exclude from auto-organization enrollment
+COMMON_EMAIL_DOMAINS = {
+    'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com',
+    'yahoo.com', 'yahoo.co.in', 'icloud.com', 'me.com', 'aol.com',
+    'protonmail.com', 'proton.me', 'mail.com', 'zoho.com', 'yandex.com'
+}
+
+
+def _auto_enroll_organization(user, email):
+    """
+    Auto-enroll user in organization based on email domain.
+    For college/company emails, creates org if not exists and adds user.
+    """
+    domain = extract_email_domain(email)
+    if not domain or domain in COMMON_EMAIL_DOMAINS:
+        return None
+    
+    # Determine org type based on common patterns
+    org_type = 'other'
+    if any(edu in domain for edu in ['.edu', '.ac.', '.edu.', 'college', 'university', 'iiit', 'iit', 'nit']):
+        org_type = 'college'
+    elif any(corp in domain for corp in ['.co.', '.corp.', '.inc.']):
+        org_type = 'company'
+    
+    # Create or get organization
+    org_name = domain.split('.')[0].upper()  # e.g., iiits.in -> IIITS
+    org, _ = Organization.objects.get_or_create(
+        domain=domain,
+        defaults={
+            'name': org_name,
+            'org_type': org_type,
+            'is_verified': False  # Auto-created orgs start unverified
+        }
+    )
+    
+    # Create membership (auto-verified since they logged in with this email)
+    membership, _ = OrganizationMembership.objects.get_or_create(
+        user=user,
+        organization=org,
+        defaults={
+            'verification_status': 'verified',
+            'verification_email': email,
+            'is_primary': True
+        }
+    )
+    
+    return membership
+
 
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
@@ -75,6 +124,9 @@ def google_auth(request):
                     if not created and not profile.profile_picture_url:
                         profile.profile_picture_url = picture
                         profile.save()
+                    
+                    # Auto-enroll in organization based on email domain
+                    _auto_enroll_organization(user, email)
             
             tokens = get_tokens_for_user(user)
             user_data = UserSerializer(user).data
