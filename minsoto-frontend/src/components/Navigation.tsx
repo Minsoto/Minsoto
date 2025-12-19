@@ -17,7 +17,8 @@ import {
   Menu,
   X,
   Bell,
-  Gift
+  Gift,
+  Castle
 } from 'lucide-react';
 
 export default function Navigation() {
@@ -47,6 +48,7 @@ export default function Navigation() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/discover', label: 'Discover', icon: Compass },
     { href: '/connections', label: 'Connections', icon: Users },
+    { href: '/guilds', label: 'Guilds', icon: Castle },
     { href: '/rewards', label: 'Rewards', icon: Gift },
   ];
 
