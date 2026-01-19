@@ -11,7 +11,7 @@ import {
     CheckCircle, Plus, X, Trophy, Zap, Layout, MessageSquare,
     Calendar, MapPin, Send, Gift, Star, Lock, Unlock,
     TrendingUp, Share2, MoreVertical, Clock, ExternalLink,
-    Timer, Handshake, Play, Square, Target, Minus, Pencil, Trash2
+    Timer, Handshake, Play, Square, Target, Minus, Pencil, Trash2, CheckSquare
 } from 'lucide-react';
 
 // Level calculation helper
@@ -45,11 +45,11 @@ export default function GuildProfilePage() {
     const {
         currentGuild, userRole, isMember, loading,
         fetchGuild, joinGuild, leaveGuild,
-        polls, fetchPolls, createPoll, votePoll,
-        tasks, fetchTasks, createTask, completeTask,
-        habits, fetchHabits, createHabit, logHabit,
+        polls, fetchPolls, createPoll, votePoll, closePoll,
+        tasks, fetchTasks, createTask, completeTask, deleteTask, updateTask,
+        habits, fetchHabits, createHabit, logHabit, deleteHabit,
         stats, fetchStats,
-        forumPosts, fetchForumPosts, createForumPost,
+        forumPosts, fetchForumPosts, createForumPost, pinPost,
         events, fetchEvents, rsvpEvent, createEvent,
         achievements, availableAchievements, fetchAchievements,
         treasury, fetchTreasury,
@@ -111,6 +111,8 @@ export default function GuildProfilePage() {
     });
     const [showEditGoal, setShowEditGoal] = useState(false);
     const [editGoal, setEditGoal] = useState<any>(null);
+    const [showEditTask, setShowEditTask] = useState(false);
+    const [editTask, setEditTask] = useState<any>(null);
 
     useEffect(() => {
         if (slug) {
@@ -293,9 +295,7 @@ export default function GuildProfilePage() {
     const handleDeleteTask = async (taskId: string) => {
         if (!confirm('Are you sure you want to delete this task?')) return;
         try {
-            // TODO: Add deleteTask to store
-            console.log('Delete task:', taskId);
-            // await deleteTask(slug, taskId);
+            await deleteTask(slug, taskId);
         } catch (error) {
             console.error('Failed to delete task:', error);
         }
@@ -304,9 +304,7 @@ export default function GuildProfilePage() {
     const handleDeleteGoal = async (goalId: string) => {
         if (!confirm('Are you sure you want to delete this goal?')) return;
         try {
-            // TODO: Add deleteHabit to store
-            console.log('Delete goal:', goalId);
-            // await deleteHabit(slug, goalId);
+            await deleteHabit(slug, goalId);
         } catch (error) {
             console.error('Failed to delete goal:', error);
         }
@@ -873,8 +871,11 @@ export default function GuildProfilePage() {
                                                         {isAdmin && poll.status === 'active' && (
                                                             <button
                                                                 onClick={async () => {
-                                                                    // TODO: Add closePoll to store
-                                                                    console.log('Close poll:', poll.id);
+                                                                    try {
+                                                                        await closePoll(slug, poll.id);
+                                                                    } catch (e) {
+                                                                        console.error('Failed to close poll:', e);
+                                                                    }
                                                                 }}
                                                                 className="text-sm text-red-400 hover:text-red-300 transition-colors"
                                                             >
@@ -912,14 +913,41 @@ export default function GuildProfilePage() {
                                 ) : (
                                     <div className="space-y-4">
                                         {forumPosts.map((post) => (
-                                            <div key={post.id} className="p-5 bg-white/5 border border-white/10 rounded-2xl hover:bg-white/[0.07] transition-colors">
+                                            <div key={post.id} className={`p-5 border rounded-2xl hover:bg-white/[0.07] transition-colors ${post.is_pinned ? 'bg-cyan-500/5 border-cyan-500/30' : 'bg-white/5 border-white/10'
+                                                }`}>
                                                 <div className="flex items-start gap-4">
                                                     <div className="w-10 h-10 bg-gradient-to-br from-cyan-400 to-purple-500 rounded-full flex-shrink-0 flex items-center justify-center text-white font-medium">
                                                         {post.author_username[0].toUpperCase()}
                                                     </div>
                                                     <div className="flex-1">
-                                                        <h3 className="text-lg font-semibold text-white">{post.title}</h3>
-                                                        <p className="text-white/60 text-sm line-clamp-2 mt-1">{post.content}</p>
+                                                        <div className="flex items-start justify-between gap-2">
+                                                            <div>
+                                                                <div className="flex items-center gap-2">
+                                                                    {post.is_pinned && (
+                                                                        <span className="text-cyan-400 text-xs">📌 Pinned</span>
+                                                                    )}
+                                                                    <h3 className="text-lg font-semibold text-white">{post.title}</h3>
+                                                                </div>
+                                                                <p className="text-white/60 text-sm line-clamp-2 mt-1">{post.content}</p>
+                                                            </div>
+                                                            {/* Pin Button (Admin only) */}
+                                                            {isAdmin && (
+                                                                <button
+                                                                    onClick={async () => {
+                                                                        try {
+                                                                            await pinPost(slug, post.id);
+                                                                        } catch (e) {
+                                                                            console.error('Failed to pin post:', e);
+                                                                        }
+                                                                    }}
+                                                                    className={`p-1.5 rounded-lg transition-colors ${post.is_pinned ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-white/40 hover:text-cyan-400'
+                                                                        }`}
+                                                                    title={post.is_pinned ? 'Unpin post' : 'Pin post'}
+                                                                >
+                                                                    📌
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                         <div className="flex items-center gap-4 mt-3 text-sm text-white/40">
                                                             <span>@{post.author_username}</span>
                                                             <span>•</span>
@@ -1139,15 +1167,27 @@ export default function GuildProfilePage() {
                                                                 </span>
                                                                 <span className="text-sm text-amber-400 font-mono">🪙 {task.point_value}</span>
 
-                                                                {/* Delete Button (Admin only) */}
+                                                                {/* Edit/Delete Buttons (Admin only) */}
                                                                 {isAdmin && (
-                                                                    <button
-                                                                        onClick={() => handleDeleteTask(task.id)}
-                                                                        className="p-1.5 hover:bg-red-500/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                                                                        title="Delete task"
-                                                                    >
-                                                                        <X size={14} className="text-red-400" />
-                                                                    </button>
+                                                                    <>
+                                                                        <button
+                                                                            onClick={() => {
+                                                                                setEditTask(task);
+                                                                                setShowEditTask(true);
+                                                                            }}
+                                                                            className="p-1.5 hover:bg-cyan-500/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                                            title="Edit task"
+                                                                        >
+                                                                            <Pencil size={14} className="text-cyan-400" />
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => handleDeleteTask(task.id)}
+                                                                            className="p-1.5 hover:bg-red-500/20 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                                                                            title="Delete task"
+                                                                        >
+                                                                            <X size={14} className="text-red-400" />
+                                                                        </button>
+                                                                    </>
                                                                 )}
                                                             </div>
                                                         </div>
@@ -1991,8 +2031,8 @@ export default function GuildProfilePage() {
                                                 type="button"
                                                 onClick={() => setNewGoal({ ...newGoal, frequency: freq })}
                                                 className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${newGoal.frequency === freq
-                                                        ? 'bg-cyan-500 text-white'
-                                                        : 'bg-white/5 text-white/60 hover:bg-white/10'
+                                                    ? 'bg-cyan-500 text-white'
+                                                    : 'bg-white/5 text-white/60 hover:bg-white/10'
                                                     }`}
                                             >
                                                 {freq.charAt(0).toUpperCase() + freq.slice(1)}
@@ -2035,8 +2075,8 @@ export default function GuildProfilePage() {
                                             type="button"
                                             onClick={() => setNewGoal({ ...newGoal, assignment_type: 'all', assigned_to: [] })}
                                             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${newGoal.assignment_type === 'all'
-                                                    ? 'bg-cyan-500 text-white'
-                                                    : 'bg-white/5 text-white/60 hover:bg-white/10'
+                                                ? 'bg-cyan-500 text-white'
+                                                : 'bg-white/5 text-white/60 hover:bg-white/10'
                                                 }`}
                                         >
                                             👥 All Members
@@ -2045,8 +2085,8 @@ export default function GuildProfilePage() {
                                             type="button"
                                             onClick={() => setNewGoal({ ...newGoal, assignment_type: 'specific' })}
                                             className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${newGoal.assignment_type === 'specific'
-                                                    ? 'bg-cyan-500 text-white'
-                                                    : 'bg-white/5 text-white/60 hover:bg-white/10'
+                                                ? 'bg-cyan-500 text-white'
+                                                : 'bg-white/5 text-white/60 hover:bg-white/10'
                                                 }`}
                                         >
                                             👤 Specific Members
@@ -2090,6 +2130,119 @@ export default function GuildProfilePage() {
                                         <Target size={16} /> Create Goal
                                     </button>
                                     <button onClick={() => setShowCreateGoal(false)} className="flex-1 py-2.5 bg-white/10 text-white rounded-xl">Cancel</button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+
+                {/* EDIT TASK MODAL */}
+                {showEditTask && editTask && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        onClick={() => setShowEditTask(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="w-full max-w-md bg-gray-900 rounded-2xl border border-white/10 overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="p-4 border-b border-white/10 flex items-center justify-between">
+                                <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                    <CheckSquare size={20} className="text-cyan-400" /> Edit Task
+                                </h3>
+                                <button onClick={() => setShowEditTask(false)} className="text-white/60 hover:text-white">
+                                    <X size={20} />
+                                </button>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <input
+                                    type="text"
+                                    placeholder="Task title..."
+                                    value={editTask.title || ''}
+                                    onChange={(e) => setEditTask({ ...editTask, title: e.target.value })}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30"
+                                />
+                                <textarea
+                                    placeholder="Description (optional)..."
+                                    value={editTask.description || ''}
+                                    onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-white/30 resize-none"
+                                    rows={3}
+                                />
+
+                                {/* Priority */}
+                                <div>
+                                    <label className="text-sm text-white/60 mb-2 block">Priority</label>
+                                    <div className="flex gap-2">
+                                        {(['low', 'medium', 'high', 'urgent'] as const).map((p) => (
+                                            <button
+                                                key={p}
+                                                onClick={() => setEditTask({ ...editTask, priority: p })}
+                                                className={`flex-1 py-2 rounded-lg text-sm capitalize ${editTask.priority === p
+                                                    ? p === 'urgent' || p === 'high'
+                                                        ? 'bg-red-500/30 text-red-300 border border-red-500/50'
+                                                        : p === 'medium'
+                                                            ? 'bg-yellow-500/30 text-yellow-300 border border-yellow-500/50'
+                                                            : 'bg-white/20 text-white border border-white/30'
+                                                    : 'bg-white/5 text-white/50 border border-white/10'
+                                                    }`}
+                                            >
+                                                {p}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="text-sm text-white/60 mb-2 block">🪙 Coins</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={editTask.point_value || 10}
+                                            onChange={(e) => setEditTask({ ...editTask, point_value: parseInt(e.target.value) || 10 })}
+                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm text-white/60 mb-2 block">Due Date</label>
+                                        <input
+                                            type="date"
+                                            value={editTask.due_date ? editTask.due_date.split('T')[0] : ''}
+                                            onChange={(e) => setEditTask({ ...editTask, due_date: e.target.value })}
+                                            className="w-full px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-white"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3 pt-2">
+                                    <button
+                                        onClick={async () => {
+                                            try {
+                                                await updateTask(slug, editTask.id, {
+                                                    title: editTask.title,
+                                                    description: editTask.description,
+                                                    priority: editTask.priority,
+                                                    point_value: editTask.point_value,
+                                                    due_date: editTask.due_date || null,
+                                                });
+                                                setShowEditTask(false);
+                                                setEditTask(null);
+                                            } catch (e) {
+                                                console.error('Failed to update task:', e);
+                                            }
+                                        }}
+                                        className="flex-1 py-2.5 bg-cyan-500 text-white rounded-xl flex items-center justify-center gap-2 font-medium"
+                                    >
+                                        <CheckSquare size={16} /> Save Changes
+                                    </button>
+                                    <button onClick={() => setShowEditTask(false)} className="flex-1 py-2.5 bg-white/10 text-white rounded-xl">Cancel</button>
                                 </div>
                             </div>
                         </motion.div>

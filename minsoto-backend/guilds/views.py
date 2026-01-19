@@ -268,9 +268,41 @@ def guild_poll_vote(request, slug, poll_id):
     })
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def guild_poll_close(request, slug, poll_id):
+    """Close an active poll (admin/creator only)."""
+    guild = get_object_or_404(Guild, slug=slug)
+    poll = get_object_or_404(GuildPoll, id=poll_id, guild=guild)
+    
+    # Check permission (admin or poll creator)
+    membership = GuildMembership.objects.filter(user=request.user, guild=guild).first()
+    if not membership:
+        return Response({'error': 'Must be a member'}, status=status.HTTP_403_FORBIDDEN)
+    
+    is_admin = membership.role in ['admin', 'owner']
+    is_creator = poll.created_by == request.user
+    
+    if not is_admin and not is_creator:
+        return Response({'error': 'Only admins or poll creator can close this poll'}, status=status.HTTP_403_FORBIDDEN)
+    
+    if poll.status != 'active':
+        return Response({'error': 'Poll is not active'}, status=status.HTTP_400_BAD_REQUEST)
+    
+    poll.status = 'closed'
+    poll.closed_at = timezone.now()
+    poll.save()
+    
+    return Response({
+        'message': 'Poll closed',
+        'poll': GuildPollSerializer(poll, context={'request': request}).data
+    })
+
+
 # =============================================================================
 # Change Requests
 # =============================================================================
+
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
@@ -484,6 +516,49 @@ def guild_task_complete(request, slug, task_id):
         return Response({'error': 'You already completed this task'}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def guild_task_update(request, slug, task_id):
+    """Update a guild task (admin only)."""
+    guild = get_object_or_404(Guild, slug=slug)
+    task = get_object_or_404(GuildTask, id=task_id, guild=guild)
+    
+    # Check admin permission
+    membership = GuildMembership.objects.filter(user=request.user, guild=guild).first()
+    if not membership or membership.role not in ['admin', 'owner']:
+        return Response({'error': 'Only admins can edit tasks'}, status=status.HTTP_403_FORBIDDEN)
+    
+    # Update allowed fields
+    if 'title' in request.data:
+        task.title = request.data['title']
+    if 'description' in request.data:
+        task.description = request.data['description']
+    if 'priority' in request.data:
+        task.priority = request.data['priority']
+    if 'point_value' in request.data:
+        task.point_value = request.data['point_value']
+    if 'due_date' in request.data:
+        task.due_date = request.data['due_date'] or None
+    
+    task.save()
+    return Response(GuildTaskSerializer(task).data)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def guild_task_delete(request, slug, task_id):
+    """Delete a guild task (admin only)."""
+    guild = get_object_or_404(Guild, slug=slug)
+    task = get_object_or_404(GuildTask, id=task_id, guild=guild)
+    
+    # Check admin permission
+    membership = GuildMembership.objects.filter(user=request.user, guild=guild).first()
+    if not membership or membership.role not in ['admin', 'owner']:
+        return Response({'error': 'Only admins can delete tasks'}, status=status.HTTP_403_FORBIDDEN)
+    
+    task.delete()
+    return Response({'message': 'Task deleted'}, status=status.HTTP_200_OK)
+
+
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def guild_habits(request, slug):
@@ -530,6 +605,21 @@ def guild_habit_log(request, slug, habit_id):
         'habit': GuildHabitSerializer(habit, context={'request': request}).data
     })
 
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def guild_habit_delete(request, slug, habit_id):
+    """Delete a guild habit (admin only)."""
+    guild = get_object_or_404(Guild, slug=slug)
+    habit = get_object_or_404(GuildHabit, id=habit_id, guild=guild)
+    
+    # Check admin permission
+    membership = GuildMembership.objects.filter(user=request.user, guild=guild).first()
+    if not membership or membership.role not in ['admin', 'owner']:
+        return Response({'error': 'Only admins can delete habits'}, status=status.HTTP_403_FORBIDDEN)
+    
+    habit.delete()
+    return Response({'message': 'Habit deleted'}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
@@ -640,9 +730,32 @@ def guild_forum_reply(request, slug, post_id):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def guild_forum_pin(request, slug, post_id):
+    """Pin or unpin a forum post (admin only)."""
+    guild = get_object_or_404(Guild, slug=slug)
+    post = get_object_or_404(GuildForumPost, id=post_id, guild=guild)
+    
+    # Check admin permission
+    membership = GuildMembership.objects.filter(user=request.user, guild=guild).first()
+    if not membership or membership.role not in ['admin', 'owner']:
+        return Response({'error': 'Only admins can pin posts'}, status=status.HTTP_403_FORBIDDEN)
+    
+    # Toggle pin status
+    post.is_pinned = not post.is_pinned
+    post.save()
+    
+    return Response({
+        'message': f'Post {"pinned" if post.is_pinned else "unpinned"}',
+        'post': GuildForumPostSerializer(post).data
+    })
+
+
 # =============================================================================
 # Event Views
 # =============================================================================
+
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])

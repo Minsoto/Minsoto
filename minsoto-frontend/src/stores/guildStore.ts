@@ -65,10 +65,19 @@ interface GuildState {
     fetchTasks: (slug: string) => Promise<void>;
     createTask: (slug: string, data: Partial<GuildTask>) => Promise<void>;
     completeTask: (slug: string, taskId: string) => Promise<void>;
+    deleteTask: (slug: string, taskId: string) => Promise<void>;
+    updateTask: (slug: string, taskId: string, data: Partial<GuildTask>) => Promise<void>;
     fetchHabits: (slug: string) => Promise<void>;
     createHabit: (slug: string, data: Partial<GuildHabit>) => Promise<void>;
     logHabit: (slug: string, habitId: string, notes?: string) => Promise<void>;
+    deleteHabit: (slug: string, habitId: string) => Promise<void>;
     fetchStats: (slug: string) => Promise<void>;
+
+    // Poll Actions
+    closePoll: (slug: string, pollId: string) => Promise<void>;
+
+    // Forum Actions
+    pinPost: (slug: string, postId: string) => Promise<void>;
 
     // Forum Actions
     fetchForumPosts: (slug: string) => Promise<void>;
@@ -234,6 +243,11 @@ export const useGuildStore = create<GuildState>((set, get) => ({
         set({ polls: get().polls.map(p => p.id === pollId ? response.data.poll : p) });
     },
 
+    closePoll: async (slug: string, pollId: string) => {
+        const response = await api.post(`/guilds/${slug}/polls/${pollId}/close/`);
+        set({ polls: get().polls.map(p => p.id === pollId ? response.data.poll : p) });
+    },
+
     fetchChangeRequests: async (slug) => {
         try {
             const response = await api.get(`/guilds/${slug}/changes/`);
@@ -273,6 +287,16 @@ export const useGuildStore = create<GuildState>((set, get) => ({
         set({ tasks: get().tasks.map(t => t.id === taskId ? response.data.task : t) });
     },
 
+    deleteTask: async (slug, taskId) => {
+        await api.delete(`/guilds/${slug}/tasks/${taskId}/delete/`);
+        set({ tasks: get().tasks.filter(t => t.id !== taskId) });
+    },
+
+    updateTask: async (slug: string, taskId: string, data: Partial<GuildTask>) => {
+        const response = await api.patch(`/guilds/${slug}/tasks/${taskId}/update/`, data);
+        set({ tasks: get().tasks.map(t => t.id === taskId ? response.data : t) });
+    },
+
     fetchHabits: async (slug) => {
         try {
             const response = await api.get(`/guilds/${slug}/habits/`);
@@ -290,6 +314,11 @@ export const useGuildStore = create<GuildState>((set, get) => ({
     logHabit: async (slug, habitId, notes) => {
         const response = await api.post(`/guilds/${slug}/habits/${habitId}/log/`, { notes });
         set({ habits: get().habits.map(h => h.id === habitId ? response.data.habit : h) });
+    },
+
+    deleteHabit: async (slug, habitId) => {
+        await api.delete(`/guilds/${slug}/habits/${habitId}/delete/`);
+        set({ habits: get().habits.filter(h => h.id !== habitId) });
     },
 
     fetchStats: async (slug) => {
@@ -320,6 +349,11 @@ export const useGuildStore = create<GuildState>((set, get) => ({
         await api.post(`/guilds/${slug}/forums/${postId}/reply/`, { content });
         // Refetch posts to update reply counts
         get().fetchForumPosts(slug);
+    },
+
+    pinPost: async (slug: string, postId: string) => {
+        const response = await api.post(`/guilds/${slug}/forums/${postId}/pin/`);
+        set({ forumPosts: get().forumPosts.map(p => p.id === postId ? response.data.post : p) });
     },
 
     // Event Actions

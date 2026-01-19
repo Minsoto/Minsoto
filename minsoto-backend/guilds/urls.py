@@ -16,20 +16,25 @@ urlpatterns = [
     # Polls & Changes
     path('<slug:slug>/polls/', views.guild_polls, name='guild_polls'),
     path('<slug:slug>/polls/<uuid:poll_id>/vote/', views.guild_poll_vote, name='guild_poll_vote'),
+    path('<slug:slug>/polls/<uuid:poll_id>/close/', views.guild_poll_close, name='guild_poll_close'),
     path('<slug:slug>/changes/', views.guild_change_requests, name='guild_change_requests'),
     path('<slug:slug>/changes/<uuid:change_id>/review/', views.guild_review_change, name='guild_review_change'),
     
     # Gamification
     path('<slug:slug>/tasks/', views.guild_tasks, name='guild_tasks'),
     path('<slug:slug>/tasks/<uuid:task_id>/complete/', views.guild_task_complete, name='guild_task_complete'),
+    path('<slug:slug>/tasks/<uuid:task_id>/update/', views.guild_task_update, name='guild_task_update'),
+    path('<slug:slug>/tasks/<uuid:task_id>/delete/', views.guild_task_delete, name='guild_task_delete'),
     path('<slug:slug>/habits/', views.guild_habits, name='guild_habits'),
     path('<slug:slug>/habits/<uuid:habit_id>/log/', views.guild_habit_log, name='guild_habit_log'),
+    path('<slug:slug>/habits/<uuid:habit_id>/delete/', views.guild_habit_delete, name='guild_habit_delete'),
     path('<slug:slug>/stats/', views.guild_stats, name='guild_stats'),
     
     # Forums
     path('<slug:slug>/forums/', views.guild_forums, name='guild_forums'),
     path('<slug:slug>/forums/<uuid:post_id>/', views.guild_forum_post, name='guild_forum_post'),
     path('<slug:slug>/forums/<uuid:post_id>/reply/', views.guild_forum_reply, name='guild_forum_reply'),
+    path('<slug:slug>/forums/<uuid:post_id>/pin/', views.guild_forum_pin, name='guild_forum_pin'),
     
     # Events
     path('<slug:slug>/events/', views.guild_events, name='guild_events'),
