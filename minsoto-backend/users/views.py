@@ -9,22 +9,60 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 
-from .models import Profile, HabitStreak, Task, UserInterest, Interest, HabitLog
-from .serializers import (
-    GoogleAuthSerializer,
-    UserSerializer,
-    ProfileSerializer,
-    UsernameSetupSerializer,
-    HabitStreakSerializer,
-    TaskSerializer,
-    UserInterestSerializer,
-    ProfileDetailSerializer,
-    LayoutUpdateSerializer,
-    InterestSerializer
-)
+from social.models import Profile, Organization, OrganizationMembership, extract_email_domain
+from .serializers import GoogleAuthSerializer, UserSerializer, UsernameSetupSerializer
 
 User = get_user_model()
+
+# Common email providers to exclude from auto-organization enrollment
+COMMON_EMAIL_DOMAINS = {
+    'gmail.com', 'googlemail.com', 'outlook.com', 'hotmail.com', 'live.com',
+    'yahoo.com', 'yahoo.co.in', 'icloud.com', 'me.com', 'aol.com',
+    'protonmail.com', 'proton.me', 'mail.com', 'zoho.com', 'yandex.com'
+}
+
+
+def _auto_enroll_organization(user, email):
+    """
+    Auto-enroll user in organization based on email domain.
+    For college/company emails, creates org if not exists and adds user.
+    """
+    domain = extract_email_domain(email)
+    if not domain or domain in COMMON_EMAIL_DOMAINS:
+        return None
+    
+    # Determine org type based on common patterns
+    org_type = 'other'
+    if any(edu in domain for edu in ['.edu', '.ac.', '.edu.', 'college', 'university', 'iiit', 'iit', 'nit']):
+        org_type = 'college'
+    elif any(corp in domain for corp in ['.co.', '.corp.', '.inc.']):
+        org_type = 'company'
+    
+    # Create or get organization
+    org_name = domain.split('.')[0].upper()  # e.g., iiits.in -> IIITS
+    org, _ = Organization.objects.get_or_create(
+        domain=domain,
+        defaults={
+            'name': org_name,
+            'org_type': org_type,
+            'is_verified': False  # Auto-created orgs start unverified
+        }
+    )
+    
+    # Create membership (auto-verified since they logged in with this email)
+    membership, _ = OrganizationMembership.objects.get_or_create(
+        user=user,
+        organization=org,
+        defaults={
+            'verification_status': 'verified',
+            'verification_email': email,
+            'is_primary': True
+        }
+    )
+    
+    return membership
 
 
 def get_tokens_for_user(user):
@@ -86,6 +124,9 @@ def google_auth(request):
                     if not created and not profile.profile_picture_url:
                         profile.profile_picture_url = picture
                         profile.save()
+                    
+                    # Auto-enroll in organization based on email domain
+                    _auto_enroll_organization(user, email)
             
             tokens = get_tokens_for_user(user)
             user_data = UserSerializer(user).data
@@ -120,250 +161,143 @@ def setup_username(request):
     
     serializer = UsernameSetupSerializer(data=request.data)
     if serializer.is_valid():
-        request.user.username = serializer.validated_data['username']
-        request.user.is_setup_complete = True
-        request.user.save()
+        with transaction.atomic():
+            # Update username and setup status
+            request.user.username = serializer.validated_data['username']
+            request.user.is_setup_complete = True
+            request.user.save()
+            
+            # Get or create profile
+            profile, created = Profile.objects.get_or_create(user=request.user)
+            
+            # Initialize profile with default widgets if it's a new profile
+            if created or not profile.layout or not profile.layout.get('widgets'):
+                default_widgets = [
+                    {
+                        "id": str(uuid.uuid4()),
+                        "type": "interests",
+                        "position": {"x": 0, "y": 0},
+                        "size": {"w": 1, "h": 2},
+                        "visibility": "public",
+                        "config": {}
+                    },
+                    {
+                        "id": str(uuid.uuid4()),
+                        "type": "tasks",
+                        "position": {"x": 1, "y": 0},
+                        "size": {"w": 2, "h": 2},
+                        "visibility": "public",
+                        "config": {}
+                    }
+                ]
+                
+                profile.layout = {"widgets": default_widgets}
+                profile.save()
         
         return Response({
-            'user': UserSerializer(request.user).data
+            'user': UserSerializer(request.user).data,
+            'message': 'Profile setup completed successfully!'
         })
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-@api_view(['GET', 'PATCH'])
+@api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def profile_me(request):
-    # Ensure profile exists
-    profile, created = Profile.objects.get_or_create(user=request.user)
+def change_username(request):
+    """
+    Change username with 30-day rate limit.
+    """
+    user = request.user
     
-    if request.method == 'GET':
-        serializer = ProfileDetailSerializer(profile)
-        return Response(serializer.data)
+    # Check rate limit
+    if user.last_username_change:
+        delta = timezone.now() - user.last_username_change
+        if delta.days < 30:
+            return Response(
+                {'error': f'You can change your username again in {30 - delta.days} days.'},
+                status=status.HTTP_429_TOO_MANY_REQUESTS
+            )
     
-    elif request.method == 'PATCH':
-        serializer = ProfileSerializer(profile, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(ProfileDetailSerializer(profile).data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    serializer = UsernameSetupSerializer(data=request.data)
+    if serializer.is_valid():
+        try:
+            with transaction.atomic():
+                user.username = serializer.validated_data['username']
+                user.last_username_change = timezone.now()
+                user.save()
+                return Response({'username': user.username})
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+            
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def user_me(request):
-    serializer = UserSerializer(request.user)
+    user = request.user
+    
+    # Auto-fix: If user has a complete profile but is_setup_complete=False, fix it
+    if not user.is_setup_complete:
+        has_custom_username = user.username and user.username != user.email
+        has_profile = hasattr(user, 'profile') and user.profile is not None
+        has_widgets = (
+            has_profile and 
+            user.profile.layout and 
+            user.profile.layout.get('widgets')
+        )
+        
+        if has_custom_username and has_widgets:
+            user.is_setup_complete = True
+            user.save(update_fields=['is_setup_complete'])
+    
+    serializer = UserSerializer(user)
     return Response(serializer.data)
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def profile_detail(request, username):
-    """Get profile with visibility logic"""
-    try:
-        user = User.objects.get(username=username)
-        profile, created = Profile.objects.get_or_create(user=user)
-        
-        is_owner = request.user == user
-        
-        # Create a copy of layout to avoid modifying the original
-        profile_data = ProfileDetailSerializer(profile).data
-        
-        # Filter widgets based on visibility
-        if not is_owner and profile_data.get('layout'):
-            visible_widgets = [
-                w for w in profile_data['layout'].get('widgets', [])
-                if w.get('visibility') == 'public'
-            ]
-            profile_data['layout']['widgets'] = visible_widgets
-        
-        return Response({
-            'profile': profile_data,
-            'is_owner': is_owner
-        })
-        
-    except User.DoesNotExist:
-        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+@permission_classes([AllowAny])
+def health_check(request):
+    """Health check endpoint for monitoring"""
+    return Response({
+        'status': 'healthy',
+        'timestamp': timezone.now().isoformat(),
+        'service': 'minsoto-backend'
+    })
 
 
-@api_view(['PATCH'])
+@api_view(['POST', 'PATCH'])
 @permission_classes([IsAuthenticated])
-def update_profile_layout(request):
-    """Save widget layout"""
-    profile, created = Profile.objects.get_or_create(user=request.user)
+def update_status(request):
+    """Update user's presence status (online/idle/focus/dnd/offline)"""
+    from .serializers import UserStatusSerializer
     
-    serializer = LayoutUpdateSerializer(data=request.data)
+    serializer = UserStatusSerializer(data=request.data)
     if serializer.is_valid():
-        profile.layout = serializer.validated_data['layout']
-        profile.save()
+        user = request.user
+        user.status = serializer.validated_data['status']
+        
+        if 'status_message' in serializer.validated_data:
+            user.status_message = serializer.validated_data['status_message']
+        
+        # Track focus session start time
+        if serializer.validated_data['status'] == 'focus':
+            if not user.focus_session_start:
+                user.focus_session_start = timezone.now()
+        else:
+            user.focus_session_start = None
+        
+        user.save()
+        
         return Response({
-            'message': 'Layout saved successfully',
-            'layout': profile.layout
+            'status': user.status,
+            'status_message': user.status_message,
+            'focus_session_start': user.focus_session_start
         })
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def widget_data(request):
-    """Get all widget data for current user"""
-    user = request.user
-    
-    data = {
-        'habits': HabitStreakSerializer(user.habits.all(), many=True).data,
-        'tasks': TaskSerializer(user.tasks.all(), many=True).data,
-        'interests': UserInterestSerializer(user.user_interests.all(), many=True).data,
-    }
-    
-    return Response(data)
-
-
-# Additional endpoints for widget management
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def habits_list(request):
-    """List all habits or create new habit"""
-    if request.method == 'GET':
-        habits = request.user.habits.all()
-        serializer = HabitStreakSerializer(habits, many=True)
-        return Response(serializer.data)
-    
-    elif request.method == 'POST':
-        serializer = HabitStreakSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET', 'PATCH', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def habit_detail(request, habit_id):
-    """Get, update, or delete a specific habit"""
-    try:
-        habit = HabitStreak.objects.get(id=habit_id, user=request.user)
-    except HabitStreak.DoesNotExist:
-        return Response({'error': 'Habit not found'}, status=status.HTTP_404_NOT_FOUND)
-    
-    if request.method == 'GET':
-        serializer = HabitStreakSerializer(habit)
-        return Response(serializer.data)
-    
-    elif request.method == 'PATCH':
-        serializer = HabitStreakSerializer(habit, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    elif request.method == 'DELETE':
-        habit.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def tasks_list(request):
-    """List all tasks or create new task"""
-    if request.method == 'GET':
-        status_filter = request.query_params.get('status')
-        tasks = request.user.tasks.all()
-        
-        if status_filter:
-            tasks = tasks.filter(status=status_filter)
-        
-        serializer = TaskSerializer(tasks, many=True)
-        return Response(serializer.data)
-    
-    elif request.method == 'POST':
-        serializer = TaskSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(user=request.user)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(['GET', 'PATCH', 'DELETE'])
-@permission_classes([IsAuthenticated])
-def task_detail(request, task_id):
-    """Get, update, or delete a specific task"""
-    try:
-        task = Task.objects.get(id=task_id, user=request.user)
-    except Task.DoesNotExist:
-        return Response({'error': 'Task not found'}, status=status.HTTP_404_NOT_FOUND)
-    
-    if request.method == 'GET':
-        serializer = TaskSerializer(task)
-        return Response(serializer.data)
-    
-    elif request.method == 'PATCH':
-        serializer = TaskSerializer(task, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-    elif request.method == 'DELETE':
-        task.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-
-
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def interests_list(request):
-    """List all available interests"""
-    interests = Interest.objects.all()
-    serializer = InterestSerializer(interests, many=True)
-    return Response(serializer.data)
-
-
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-def add_interest(request):
-    """Add interest to user profile"""
-    interest_id = request.data.get('interest_id')
-    is_public = request.data.get('is_public', True)
-    
-    try:
-        interest = Interest.objects.get(id=interest_id)
-        user_interest, created = UserInterest.objects.get_or_create(
-            user=request.user,
-            interest=interest,
-            defaults={'is_public': is_public}
-        )
-        
-        if not created:
-            return Response(
-                {'error': 'Interest already added'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        serializer = UserInterestSerializer(user_interest)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-        
-    except Interest.DoesNotExist:
-        return Response(
-            {'error': 'Interest not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-
-@api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
-def remove_interest(request, interest_id):
-    """Remove interest from user profile"""
-    try:
-        user_interest = UserInterest.objects.get(
-            user=request.user,
-            interest_id=interest_id
-        )
-        user_interest.delete()
-        return Response(status=status.HTTP_204_NO_CONTENT)
-        
-    except UserInterest.DoesNotExist:
-        return Response(
-            {'error': 'Interest not found'},
-            status=status.HTTP_404_NOT_FOUND
-        )

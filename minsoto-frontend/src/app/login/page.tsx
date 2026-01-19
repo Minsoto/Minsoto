@@ -9,7 +9,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string>('');
   const [currentKanji, setCurrentKanji] = useState(0);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, _hasHydrated } = useAuthStore();
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -24,15 +24,16 @@ export default function LoginPage() {
 
   // Redirect based on authentication inside useEffect (fix jitter/refresh)
   useEffect(() => {
-    if (isAuthenticated) {
-      if (user?.is_setup_complete) {
-        router.push('/coming-soon');
-      } else {
+    if (_hasHydrated && isAuthenticated && user) {
+      // Check if user needs to complete setup
+      if (!user.is_setup_complete) {
         router.push('/setup-username');
+      } else {
+        router.push(`/profile/${user.username}`);
       }
     }
     // Dependencies forced to only run on auth or user change
-  }, [isAuthenticated, user, router]);
+  }, [isAuthenticated, user, router, _hasHydrated]);
 
   // Cycle through kanji elements every 4 seconds
   useEffect(() => {
@@ -57,8 +58,8 @@ export default function LoginPage() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Show loading spinner if already authenticated to prevent UI flicker
-  if (isAuthenticated) {
+  // Show loading spinner if checking auth or already authenticated
+  if (!_hasHydrated || isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-black">
         <div
@@ -84,7 +85,7 @@ export default function LoginPage() {
       {/* Background Animated Effects */}
       <div className="fixed inset-0 pointer-events-none">
         {/* Radial gradient softly following mouse */}
-        <div 
+        <div
           className="absolute w-96 h-96 opacity-8 transition-all duration-1000 ease-out"
           style={{
             background: 'radial-gradient(circle, white 0%, transparent 70%)',
@@ -101,7 +102,7 @@ export default function LoginPage() {
         <svg className="absolute inset-0 w-full h-full opacity-5">
           <defs>
             <pattern id="loginGrid" width="60" height="60" patternUnits="userSpaceOnUse">
-              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="0.5" opacity="0.15"/>
+              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="0.5" opacity="0.15" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#loginGrid)" />
@@ -160,7 +161,7 @@ export default function LoginPage() {
                     <div className="h-px bg-white opacity-10 w-full" />
                   </div>
                   <div className="flex justify-center pt-4">
-                    <GoogleAuthButton 
+                    <GoogleAuthButton
                       onSuccess={handleAuthSuccess}
                       onError={handleAuthError}
                     />

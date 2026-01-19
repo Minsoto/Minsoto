@@ -1,6 +1,5 @@
 'use client';
 
-import type { AxiosError } from 'axios';
 import axios from 'axios';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
@@ -97,7 +96,7 @@ export default function SetupUsernamePage() {
       {/* Animated Background Effects */}
       <div className="fixed inset-0 pointer-events-none">
         {/* Subtle moving gradient that follows mouse */}
-        <div 
+        <div
           className="absolute w-96 h-96 opacity-8 transition-all duration-1000 ease-out"
           style={{
             background: 'radial-gradient(circle, white 0%, transparent 70%)',
@@ -106,22 +105,22 @@ export default function SetupUsernamePage() {
             transform: 'translate(-50%, -50%)'
           }}
         />
-        
+
         {/* Animated Kanji Background */}
         <div className="absolute right-10 top-20 text-9xl font-thin opacity-8 transition-all duration-1000">
           {kanjiElements[currentKanji].char}
         </div>
-        
+
         {/* Secondary kanji */}
         <div className="absolute left-10 bottom-20 text-6xl font-thin opacity-10 transition-all duration-1000">
           {kanjiElements[(currentKanji + 2) % kanjiElements.length].char}
         </div>
-        
+
         {/* Grid Pattern */}
         <svg className="absolute inset-0 w-full h-full opacity-5">
           <defs>
             <pattern id="setupGrid" width="60" height="60" patternUnits="userSpaceOnUse">
-              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="0.5" opacity="0.15"/>
+              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="0.5" opacity="0.15" />
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#setupGrid)" />
@@ -134,7 +133,7 @@ export default function SetupUsernamePage() {
       {/* Main Content */}
       <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4">
         <div className="max-w-lg w-full space-y-12">
-          
+
           {/* Header Section */}
           <div className="text-center space-y-8">
             {/* Animated Kanji Display */}
@@ -146,7 +145,7 @@ export default function SetupUsernamePage() {
                 {kanjiElements[currentKanji].reading} · {kanjiElements[currentKanji].meaning}
               </div>
             </div>
-            
+
             {/* Welcome Text */}
             <div className="space-y-4">
               <div className="flex items-center justify-center gap-4">
@@ -154,11 +153,11 @@ export default function SetupUsernamePage() {
                 <span className="text-2xl font-light tracking-widest">MINSOTO</span>
                 <div className="h-px bg-white w-12 opacity-20" />
               </div>
-              
+
               <h1 className="text-3xl md:text-4xl font-thin tracking-wide">
                 Choose Your Identity
               </h1>
-              
+
               <p className="text-sm font-light opacity-60 max-w-md mx-auto leading-relaxed">
                 Create your unique presence in the mindful digital space
               </p>
@@ -168,7 +167,7 @@ export default function SetupUsernamePage() {
           <div className="relative">
             <div className="border border-white p-8 md:p-10">
               <form className="space-y-8" onSubmit={handleSubmit}>
-                
+
                 {/* Error Display */}
                 {error && (
                   <div className="border border-red-400 bg-red-900 bg-opacity-20 text-red-300 px-4 py-3 text-sm">
@@ -178,7 +177,7 @@ export default function SetupUsernamePage() {
                     </div>
                   </div>
                 )}
-                
+
                 {/* Username Input Section */}
                 <div className="space-y-6">
                   <div className="space-y-3">
@@ -187,7 +186,7 @@ export default function SetupUsernamePage() {
                     </p>
                     <div className="h-px bg-white opacity-10 w-full" />
                   </div>
-                  
+
                   {/* Custom Input */}
                   <div className="relative">
                     <input
@@ -219,7 +218,7 @@ export default function SetupUsernamePage() {
                     </span>
                     <div className="absolute inset-0 bg-white transform -translate-x-full group-hover:translate-x-0 group-disabled:group-hover:-translate-x-full transition-transform duration-500" />
                     <div className="absolute inset-0 border border-white opacity-40 group-hover:opacity-0 group-disabled:opacity-20 transition-opacity duration-500" />
-                    
+
                     {loading && (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <div className="w-5 h-5 border border-current border-t-transparent rounded-full animate-spin" />
@@ -233,7 +232,7 @@ export default function SetupUsernamePage() {
                   <p className="text-xs opacity-40">Jibun · Be yourself</p>
                 </div>
               </form>
-              
+
               {/* Decorative corners */}
               <div className="absolute top-0 left-0 w-6 h-6 border-t-2 border-l-2 border-white" />
               <div className="absolute top-0 right-0 w-6 h-6 border-t-2 border-r-2 border-white" />

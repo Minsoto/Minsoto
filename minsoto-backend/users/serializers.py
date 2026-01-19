@@ -1,6 +1,5 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
-from .models import Profile, Interest, HabitStreak, Task, UserInterest, HabitLog
 
 User = get_user_model()
 
@@ -8,88 +7,31 @@ User = get_user_model()
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_setup_complete')
-        read_only_fields = ('id', 'email')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_setup_complete',
+                  'status', 'status_message', 'last_active', 'focus_session_start')
+        read_only_fields = ('id', 'email', 'last_active')
 
 
-class InterestSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Interest
-        fields = ('id', 'name', 'description')
-        read_only_fields = ('id',)
-
-
-class UserInterestSerializer(serializers.ModelSerializer):
-    interest_name = serializers.CharField(source='interest.name', read_only=True)
-    interest_id = serializers.UUIDField(source='interest.id', read_only=True)
+class UserMinimalSerializer(serializers.ModelSerializer):
+    """Minimal user info for connection/organization displays"""
+    profile_picture_url = serializers.SerializerMethodField()
     
     class Meta:
-        model = UserInterest
-        fields = ['id', 'interest_id', 'interest_name', 'is_public', 'added_at']
-        read_only_fields = ('id', 'added_at')
-
-
-class HabitLogSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = HabitLog
-        fields = ['id', 'date', 'completed', 'notes', 'created_at']
-        read_only_fields = ('id', 'created_at')
-
-
-class HabitStreakSerializer(serializers.ModelSerializer):
-    recent_logs = serializers.SerializerMethodField()
+        model = User
+        fields = ('id', 'username', 'first_name', 'last_name', 'profile_picture_url', 
+                  'status', 'status_message')
+        read_only_fields = fields
     
-    class Meta:
-        model = HabitStreak
-        fields = ['id', 'name', 'description', 'current_streak', 'longest_streak', 
-                  'is_public', 'created_at', 'updated_at', 'recent_logs']
-        read_only_fields = ('id', 'created_at', 'updated_at')
-    
-    def get_recent_logs(self, obj):
-        # Get last 30 days of logs
-        recent = obj.logs.all()[:30]
-        return HabitLogSerializer(recent, many=True).data
+    def get_profile_picture_url(self, obj):
+        if hasattr(obj, 'profile') and obj.profile:
+            return obj.profile.profile_picture_url
+        return ''
 
 
-class TaskSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Task
-        fields = ['id', 'title', 'description', 'status', 'priority', 'due_date', 
-                  'is_public', 'created_at', 'updated_at']
-        read_only_fields = ('id', 'created_at', 'updated_at')
-
-
-class ProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    
-    class Meta:
-        model = Profile
-        fields = ('id', 'user', 'bio', 'profile_picture_url', 'theme', 'created_at', 'updated_at')
-        read_only_fields = ('id', 'created_at', 'updated_at')
-
-
-class ProfileDetailSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    interests = UserInterestSerializer(source='user.user_interests', many=True, read_only=True)
-    stats = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Profile
-        fields = ['id', 'user', 'bio', 'profile_picture_url', 'theme', 'layout', 
-                  'interests', 'stats', 'created_at', 'updated_at']
-        read_only_fields = ('id', 'created_at', 'updated_at')
-    
-    def get_stats(self, obj):
-        """Calculate profile statistics"""
-        user = obj.user
-        return {
-            'connections': 0,  # Will implement in Phase 2
-            'friends': 0,      # Will implement in Phase 2
-            'total_tasks': user.tasks.count(),
-            'completed_tasks': user.tasks.filter(status='completed').count(),
-            'active_habits': user.habits.count(),
-            'interests_count': user.user_interests.count(),
-        }
+class UserStatusSerializer(serializers.Serializer):
+    """Serializer for updating user status"""
+    status = serializers.ChoiceField(choices=['online', 'idle', 'focus', 'dnd', 'offline'])
+    status_message = serializers.CharField(max_length=100, required=False, allow_blank=True)
 
 
 class GoogleAuthSerializer(serializers.Serializer):
@@ -110,16 +52,3 @@ class UsernameSetupSerializer(serializers.Serializer):
             raise serializers.ValidationError("Username must be at least 3 characters long.")
         return value
 
-
-class LayoutUpdateSerializer(serializers.Serializer):
-    layout = serializers.JSONField()
-    
-    def validate_layout(self, value):
-        """Validate layout structure"""
-        if not isinstance(value, dict):
-            raise serializers.ValidationError("Layout must be a JSON object.")
-        if 'widgets' not in value:
-            raise serializers.ValidationError("Layout must contain 'widgets' key.")
-        if not isinstance(value['widgets'], list):
-            raise serializers.ValidationError("'widgets' must be an array.")
-        return value
