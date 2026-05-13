@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Check, Repeat, Flame, Calendar, ChevronDown, ChevronUp, Settings2, X, Coins } from 'lucide-react';
 import { useDashboardStore } from '@/stores/dashboardStore';
 import { useGamificationStore } from '@/stores/gamificationStore';
+import { handleApiError, showSuccess } from '@/lib/toast';
 import api from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
@@ -52,7 +53,7 @@ export default function TodaysFocus() {
                 }, 500); // Small delay to let backend process
             }
         } catch (error) {
-            console.error('Task toggle failed', error);
+            handleApiError(error, 'Failed to update task');
         } finally {
             setLoading(null);
         }
@@ -75,7 +76,7 @@ export default function TodaysFocus() {
                 }, 500); // Small delay to let backend process
             }
         } catch (error) {
-            console.error('Habit toggle failed', error);
+            handleApiError(error, 'Failed to update habit');
         } finally {
             setLoading(null);
         }
@@ -104,8 +105,9 @@ export default function TodaysFocus() {
             });
             setEditingHabit(null);
             await fetchFocus();
+            showSuccess('Habit updated!');
         } catch (error) {
-            console.error('Failed to update habit:', error);
+            handleApiError(error, 'Failed to update habit');
         } finally {
             setSavingEdit(false);
         }
@@ -362,10 +364,11 @@ export default function TodaysFocus() {
                             onClick={() => setEditingHabit(null)}
                         />
                         <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            className="relative w-full max-w-sm bg-[#0a0a12] border border-white/10 rounded-2xl p-6 z-10"
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="relative w-full max-w-sm glass-panel rounded-2xl p-6 z-10"
                         >
                             <div className="flex items-center justify-between mb-4">
                                 <h3 className="text-lg font-semibold text-white">Edit Habit</h3>
@@ -395,7 +398,7 @@ export default function TodaysFocus() {
                                                 key={c.name}
                                                 onClick={() => setEditingHabit({ ...editingHabit, color: c.name })}
                                                 className={`w-8 h-8 rounded-lg ${c.bg} transition-all ${editingHabit.color === c.name
-                                                    ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0a0a12]'
+                                                    ? 'ring-2 ring-white ring-offset-2 ring-offset-black'
                                                     : 'opacity-60 hover:opacity-100'
                                                     }`}
                                             />

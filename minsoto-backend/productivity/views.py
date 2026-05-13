@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django.utils import timezone
 from django.db.models import Q
@@ -386,7 +386,7 @@ def widget_data(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def widget_data_for_user(request, username):
     """
     Get widget data for a specific user with visibility filtering.
@@ -412,7 +412,8 @@ def widget_data_for_user(request, username):
     except User.DoesNotExist:
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
     
-    is_owner = request.user == target_user
+    is_authenticated = request.user.is_authenticated
+    is_owner = is_authenticated and request.user == target_user
     
     # If viewing own profile, return all data (inline to avoid DRF double-wrapping)
     if is_owner:
@@ -450,9 +451,13 @@ def widget_data_for_user(request, username):
         })
     
     # Check connection status
-    connection = Connection.get_connection_between(request.user, target_user)
-    is_connected = connection and connection.status == 'accepted'
-    is_friend = is_connected and connection.connection_type == 'friend'
+    is_connected = False
+    is_friend = False
+    
+    if is_authenticated:
+        connection = Connection.get_connection_between(request.user, target_user)
+        is_connected = connection and connection.status == 'accepted'
+        is_friend = is_connected and connection.connection_type == 'friend'
     
     # Determine visibility level
     # Highest access: 'public' (everyone), 'connections' (connected), 'friends' (friends only)

@@ -1,8 +1,10 @@
 'use client';
 
+import { useState } from 'react';
 import BaseWidget from './BaseWidget';
-import { Check, Flame } from 'lucide-react';
+import { Check, Flame, Plus } from 'lucide-react';
 import Image from 'next/image';
+import { useGlobalActionsStore } from '@/stores/globalActionsStore';
 
 interface Habit {
   id: string;
@@ -19,6 +21,7 @@ interface HabitStreakWidgetProps {
   isOwner: boolean;
   onVisibilityToggle?: () => void;
   onDelete?: () => void;
+  onUpdate?: () => void;
   habits: Habit[];
   currentStreak?: number;
   longestStreak?: number;
@@ -31,10 +34,32 @@ export default function HabitStreakWidget({
   isOwner,
   onVisibilityToggle,
   onDelete,
+  onUpdate,
   habits,
   currentStreak = 0,
   longestStreak = 0
 }: HabitStreakWidgetProps) {
+  const [loading, setLoading] = useState<string | null>(null);
+  const { openHabitModal } = useGlobalActionsStore();
+
+  const handleToggle = async (habitId: string, isCompleted: boolean) => {
+    if (!isOwner) return;
+    setLoading(habitId);
+    try {
+      const { default: api } = await import('@/lib/api');
+      if (isCompleted) {
+        await api.delete(`/habits/${habitId}/log/`);
+      } else {
+        await api.post(`/habits/${habitId}/log/`);
+      }
+      onUpdate?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const completedToday = habits.filter(h => h.completed_today).length;
 
   // Sort by streak
@@ -51,6 +76,17 @@ export default function HabitStreakWidget({
       isOwner={isOwner}
       onVisibilityToggle={onVisibilityToggle}
       onDelete={onDelete}
+      headerAction={
+        isOwner && (
+          <button
+            onClick={openHabitModal}
+            className="p-1 hover:bg-white/10 rounded transition-colors text-white/50 hover:text-white"
+            title="Add Habit"
+          >
+            <Plus size={14} />
+          </button>
+        )
+      }
     >
       <div className="h-full flex flex-col">
         {/* Header Stats */}
@@ -78,8 +114,10 @@ export default function HabitStreakWidget({
           {sortedHabits.slice(0, 6).map((habit) => (
             <div
               key={habit.id}
-              className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${habit.completed_today ? 'bg-white/5' : ''
-                }`}
+              onClick={() => handleToggle(habit.id, habit.completed_today || false)}
+              className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
+                isOwner ? 'cursor-pointer hover:bg-white/10' : ''
+              } ${habit.completed_today ? 'bg-white/5' : ''}`}
             >
               {/* Image or icon */}
               <div className="w-8 h-8 rounded-lg overflow-hidden flex-shrink-0 bg-white/5 flex items-center justify-center">
@@ -110,12 +148,14 @@ export default function HabitStreakWidget({
               </div>
 
               {/* Completion indicator */}
-              {habit.completed_today ? (
-                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center">
+              {loading === habit.id ? (
+                <div className="w-5 h-5 rounded-full border-2 border-white/20 border-t-white animate-spin flex-shrink-0" />
+              ) : habit.completed_today ? (
+                <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
                   <Check size={12} className="text-emerald-400" />
                 </div>
               ) : (
-                <div className="w-5 h-5 rounded-full border border-white/20" />
+                <div className="w-5 h-5 rounded-full border border-white/20 flex-shrink-0" />
               )}
             </div>
           ))}

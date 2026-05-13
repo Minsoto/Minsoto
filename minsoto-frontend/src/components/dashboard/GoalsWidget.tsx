@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Target, Plus, Minus, Trash2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '@/lib/api';
+import { useGlobalActionsStore } from '@/stores/globalActionsStore';
 
 interface Goal {
     id: string;
@@ -31,8 +32,14 @@ export default function GoalsWidget() {
     const [error, setError] = useState<string | null>(null);
     const [updating, setUpdating] = useState<string | null>(null);
 
+    const { openGoalModal } = useGlobalActionsStore();
+
     useEffect(() => {
         fetchGoals();
+
+        const handleRefresh = () => fetchGoals();
+        window.addEventListener('minsoto-global-refresh', handleRefresh);
+        return () => window.removeEventListener('minsoto-global-refresh', handleRefresh);
     }, []);
 
     const fetchGoals = async () => {
@@ -98,7 +105,16 @@ export default function GoalsWidget() {
                     <Target size={16} className="text-white/50" />
                     <h2 className="text-sm font-bold tracking-widest text-white/60 uppercase">Goals</h2>
                 </div>
-                <span className="text-xs font-mono text-white/50">{overallProgress}% overall</span>
+                <div className="flex items-center gap-3">
+                    <span className="text-xs font-mono text-white/50">{overallProgress}% overall</span>
+                    <button
+                        onClick={openGoalModal}
+                        className="p-1 hover:bg-white/10 rounded transition-colors text-white/50 hover:text-white"
+                        title="Add Goal"
+                    >
+                        <Plus size={16} />
+                    </button>
+                </div>
             </div>
 
             {/* Circular Progress */}

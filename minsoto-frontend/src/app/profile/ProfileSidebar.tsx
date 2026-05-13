@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Edit3, MessageSquare, AlertTriangle, Camera } from 'lucide-react';
 import StatusBadge from '@/components/StatusBadge';
 
@@ -56,31 +57,50 @@ export default function ProfileSidebar({
   const [avatarError, setAvatarError] = useState(false);
   const [urlError, setUrlError] = useState('');
   const [avatarUrlError, setAvatarUrlError] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const getDisplayChar = () => {
-    if (user.first_name) return user.first_name[0].toUpperCase();
-    return user.username[0].toUpperCase();
+    if (user?.first_name) return user.first_name[0].toUpperCase();
+    if (user?.username) return user.username[0].toUpperCase();
+    return '?';
+  };
+
+  const formatImageUrl = (inputUrl: string): string => {
+    try {
+      const urlObj = new URL(inputUrl);
+      if (urlObj.hostname === 'giphy.com' && urlObj.pathname.startsWith('/gifs/')) {
+        const match = urlObj.pathname.match(/(?:.*-)?([a-zA-Z0-9]+)$/);
+        if (match) return `https://media.giphy.com/media/${match[1]}/giphy.gif`;
+      }
+    } catch {}
+    return inputUrl;
   };
 
   const handleSaveBanner = () => {
-    if (newBannerUrl && !isValidImageUrl(newBannerUrl)) {
+    const finalUrl = formatImageUrl(newBannerUrl);
+    if (finalUrl && !isValidImageUrl(finalUrl)) {
       setUrlError('Please enter a valid URL.');
       return;
     }
     setUrlError('');
     setBannerError(false);
-    onUpdateBanner?.(newBannerUrl);
+    onUpdateBanner?.(finalUrl);
     setIsEditingBanner(false);
   };
 
   const handleSaveAvatar = () => {
-    if (newAvatarUrl && !isValidImageUrl(newAvatarUrl)) {
+    const finalUrl = formatImageUrl(newAvatarUrl);
+    if (finalUrl && !isValidImageUrl(finalUrl)) {
       setAvatarUrlError('Please enter a valid URL.');
       return;
     }
     setAvatarUrlError('');
     setAvatarError(false);
-    onUpdateAvatar?.(newAvatarUrl);
+    onUpdateAvatar?.(finalUrl);
     setIsEditingAvatar(false);
   };
 
@@ -226,78 +246,84 @@ export default function ProfileSidebar({
         </div>
       )}
 
-      {/* Banner Edit Modal */}
-      {isEditingBanner && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6">
-          <div className="glass-panel rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-sm font-semibold text-white mb-4">Set Banner Image</h3>
-            <input
-              type="text"
-              value={newBannerUrl}
-              onChange={(e) => { setNewBannerUrl(e.target.value); setUrlError(''); }}
-              placeholder="Paste any image URL..."
-              className="input mb-2"
-            />
-            <p className="text-[10px] text-white/40 mb-2">Paste a direct link to any image</p>
-            {urlError && (
-              <div className="flex items-center gap-2 mb-3 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <AlertTriangle size={14} className="text-red-400" />
-                <p className="text-red-400 text-xs">{urlError}</p>
+      {/* Modals rendered via Portal to escape stacking context */}
+      {mounted && createPortal(
+        <>
+          {/* Banner Edit Modal */}
+          {isEditingBanner && (
+            <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-6">
+              <div className="glass-panel rounded-xl p-6 w-full max-w-md shadow-2xl">
+                <h3 className="text-sm font-semibold text-white mb-4">Set Banner Image</h3>
+                <input
+                  type="text"
+                  value={newBannerUrl}
+                  onChange={(e) => { setNewBannerUrl(e.target.value); setUrlError(''); }}
+                  placeholder="Paste any image URL..."
+                  className="input mb-2"
+                />
+                <p className="text-[10px] text-white/40 mb-2">Paste a direct link to any image</p>
+                {urlError && (
+                  <div className="flex items-center gap-2 mb-3 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <AlertTriangle size={14} className="text-red-400" />
+                    <p className="text-red-400 text-xs">{urlError}</p>
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setIsEditingBanner(false); setUrlError(''); }}
+                    className="flex-1 btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveBanner}
+                    className="flex-1 btn btn-primary"
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
-            )}
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setIsEditingBanner(false); setUrlError(''); }}
-                className="flex-1 btn btn-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveBanner}
-                className="flex-1 btn btn-primary"
-              >
-                Save
-              </button>
             </div>
-          </div>
-        </div>
-      )}
+          )}
 
-      {/* Avatar Edit Modal */}
-      {isEditingAvatar && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6">
-          <div className="glass-panel rounded-xl p-6 w-full max-w-md">
-            <h3 className="text-sm font-semibold text-white mb-4">Set Profile Picture</h3>
-            <input
-              type="text"
-              value={newAvatarUrl}
-              onChange={(e) => { setNewAvatarUrl(e.target.value); setAvatarUrlError(''); }}
-              placeholder="Paste any image URL..."
-              className="input mb-2"
-            />
-            <p className="text-[10px] text-white/40 mb-2">Paste a direct link to any image</p>
-            {avatarUrlError && (
-              <div className="flex items-center gap-2 mb-3 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
-                <AlertTriangle size={14} className="text-red-400" />
-                <p className="text-red-400 text-xs">{avatarUrlError}</p>
+          {/* Avatar Edit Modal */}
+          {isEditingAvatar && (
+            <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-6">
+              <div className="glass-panel rounded-xl p-6 w-full max-w-md shadow-2xl">
+                <h3 className="text-sm font-semibold text-white mb-4">Set Profile Picture</h3>
+                <input
+                  type="text"
+                  value={newAvatarUrl}
+                  onChange={(e) => { setNewAvatarUrl(e.target.value); setAvatarUrlError(''); }}
+                  placeholder="Paste any image URL..."
+                  className="input mb-2"
+                />
+                <p className="text-[10px] text-white/40 mb-2">Paste a direct link to any image</p>
+                {avatarUrlError && (
+                  <div className="flex items-center gap-2 mb-3 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
+                    <AlertTriangle size={14} className="text-red-400" />
+                    <p className="text-red-400 text-xs">{avatarUrlError}</p>
+                  </div>
+                )}
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setIsEditingAvatar(false); setAvatarUrlError(''); }}
+                    className="flex-1 btn btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveAvatar}
+                    className="flex-1 btn btn-primary"
+                  >
+                    Save
+                  </button>
+                </div>
               </div>
-            )}
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setIsEditingAvatar(false); setAvatarUrlError(''); }}
-                className="flex-1 btn btn-secondary"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveAvatar}
-                className="flex-1 btn btn-primary"
-              >
-                Save
-              </button>
             </div>
-          </div>
-        </div>
+          )}
+        </>,
+        document.body
       )}
     </div>
   );

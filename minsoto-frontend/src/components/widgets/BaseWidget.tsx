@@ -13,6 +13,7 @@ interface BaseWidgetProps {
   onVisibilityToggle?: () => void;
   onDelete?: () => void;
   className?: string;
+  headerAction?: React.ReactNode;
 }
 
 export default function BaseWidget({
@@ -25,7 +26,8 @@ export default function BaseWidget({
   isOwner,
   onVisibilityToggle,
   onDelete,
-  className = ''
+  className = '',
+  headerAction
 }: BaseWidgetProps) {
   const [isHovered, setIsHovered] = useState(false);
   const isPrivate = visibility === 'private';
@@ -43,8 +45,9 @@ export default function BaseWidget({
           {title}
         </h3>
 
-        {/* Indicators */}
+        {/* Indicators and Actions */}
         <div className="flex items-center gap-2">
+          {headerAction}
           {isPrivate && (
             <Lock size={12} className="text-white/20" />
           )}

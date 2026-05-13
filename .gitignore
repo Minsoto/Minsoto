@@ -1,0 +1,38 @@
+# Secrets — never commit
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Build artifacts
+*.log
+build-errors.log
+lint-output.txt
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node
+node_modules/
+.npm
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Temp
+tmp/
+temp/

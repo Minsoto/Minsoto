@@ -44,14 +44,14 @@ def profile_me(request):
 
 
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([AllowAny])
 def profile_detail(request, username):
     """Get profile with visibility logic"""
     try:
         user = User.objects.get(username=username)
         profile, created = Profile.objects.get_or_create(user=user)
         
-        is_owner = request.user == user
+        is_owner = request.user.is_authenticated and request.user == user
         
         profile_data = ProfileDetailSerializer(profile).data
         

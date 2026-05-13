@@ -14,7 +14,9 @@ urlpatterns = [
     path('api/', include('productivity.urls')),
     path('api/', include('social.urls')),
     path('api/', include('gamification.urls')),
-    path('api/guilds/', include('guilds.urls')),
+    path('api/', include('journal.urls')),
+    path('api/', include('resources.urls')),
+    # guilds removed from production surface (v2.0)
 ]
 
 if settings.DEBUG:

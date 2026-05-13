@@ -93,8 +93,8 @@ export default function PointsWidget({
                                 <div
                                     key={reward.id}
                                     className={`px-2 py-1 text-xs rounded border ${points.balance >= reward.cost
-                                            ? 'border-green-500/30 bg-green-500/10 text-green-300'
-                                            : 'border-white/10 bg-white/5 text-white/40'
+                                        ? 'border-green-500/30 bg-green-500/10 text-green-300'
+                                        : 'border-white/10 bg-white/5 text-white/40'
                                         }`}
                                 >
                                     {reward.icon} {reward.cost}
@@ -107,15 +107,7 @@ export default function PointsWidget({
                     </div>
                 )}
 
-                {/* Link to Store */}
-                {isOwner && (
-                    <a
-                        href="/rewards"
-                        className="mt-3 text-center text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                    >
-                        Open Reward Store →
-                    </a>
-                )}
+                {/* Reward Store - Coming Soon */}
             </div>
         </BaseWidget>
     );

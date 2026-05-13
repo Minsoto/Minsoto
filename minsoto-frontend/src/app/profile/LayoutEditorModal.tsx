@@ -162,9 +162,9 @@ export default function LayoutEditorModal({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 bg-[#000000] flex flex-col">
+        <div className="fixed inset-0 z-50 bg-[var(--background)] flex flex-col">
             {/* Toolbar */}
-            <div className="bg-[#090910] border-b border-white/10 px-6 py-4 flex items-center justify-between z-50">
+            <div className="bg-[var(--background-elevated)] border-b border-[var(--glass-border)] px-6 py-4 flex items-center justify-between z-50">
                 <div className="flex items-center gap-4">
                     <h2 className="text-lg font-bold text-white tracking-tight">Layout Editor</h2>
                     <div className="h-4 w-px bg-white/20" />
@@ -202,8 +202,8 @@ export default function LayoutEditorModal({
             </div>
 
             {/* Canvas Area */}
-            <div className="flex-1 overflow-auto bg-[#050508] p-8 custom-scrollbar relative">
-                <div className="absolute inset-0 bg-[radial-gradient(#ffffff05_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
+            <div className="flex-1 overflow-auto bg-[var(--background)] p-8 custom-scrollbar relative">
+                <div className="absolute inset-0 bg-[radial-gradient(var(--foreground)_1px,transparent_1px)] opacity-5 [background-size:20px_20px] pointer-events-none" />
 
                 <div className="max-w-[1400px] mx-auto min-h-[800px]">
                     <ResponsiveGridLayout
@@ -218,7 +218,7 @@ export default function LayoutEditorModal({
                         draggableHandle=".cursor-move"
                         compactType="vertical"
                         preventCollision={false}
-                        margin={[16, 16]}
+                        margin={[20, 20]}
                     >
                         {localWidgets.map(widget => (
                             <div key={widget.id} className="relative group">

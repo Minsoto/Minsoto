@@ -2,9 +2,10 @@ import uuid
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from django.conf import settings
@@ -15,6 +16,11 @@ from social.models import Profile, Organization, OrganizationMembership, extract
 from .serializers import GoogleAuthSerializer, UserSerializer, UsernameSetupSerializer
 
 User = get_user_model()
+
+
+class AuthRateThrottle(AnonRateThrottle):
+    """Rate limit for the auth endpoint to prevent brute-force attacks."""
+    rate = '100/hour'
 
 # Common email providers to exclude from auto-organization enrollment
 COMMON_EMAIL_DOMAINS = {
@@ -75,6 +81,7 @@ def get_tokens_for_user(user):
 
 @api_view(['POST'])
 @permission_classes([AllowAny])
+@throttle_classes([AuthRateThrottle])
 def google_auth(request):
     serializer = GoogleAuthSerializer(data=request.data)
     if serializer.is_valid():
@@ -193,6 +200,9 @@ def setup_username(request):
                 
                 profile.layout = {"widgets": default_widgets}
                 profile.save()
+            
+            # --- Onboarding: Create example data for brand new users ---
+            _create_onboarding_data(request.user)
         
         return Response({
             'user': UserSerializer(request.user).data,
@@ -200,6 +210,69 @@ def setup_username(request):
         })
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+def _create_onboarding_data(user):
+    """
+    Create sample tasks, habits, and a goal for a brand new user
+    so they don't land on an empty dashboard.
+    """
+    from productivity.models import Task, HabitStreak, Goal
+
+    # Example Tasks
+    Task.objects.bulk_create([
+        Task(
+            user=user,
+            title='👋 Welcome to Minsoto!',
+            description='Take a look around and customize your dashboard. You can drag and resize widgets.',
+            status='todo',
+            priority='high',
+            is_public=True,
+        ),
+        Task(
+            user=user,
+            title='Set up your profile',
+            description='Add a bio, interests, and a banner image to personalize your public profile.',
+            status='todo',
+            priority='medium',
+            is_public=True,
+        ),
+        Task(
+            user=user,
+            title='Connect with someone',
+            description='Head to the Connections tab and find someone to connect with.',
+            status='todo',
+            priority='low',
+            is_public=True,
+        ),
+    ])
+
+    # Example Habits
+    HabitStreak.objects.bulk_create([
+        HabitStreak(
+            user=user,
+            name='💧 Drink 8 glasses of water',
+            color='blue',
+            frequency='daily',
+        ),
+        HabitStreak(
+            user=user,
+            name='📖 Read for 10 minutes',
+            color='purple',
+            frequency='daily',
+        ),
+    ])
+
+    # Example Goal
+    Goal.objects.create(
+        user=user,
+        title='Complete your first week on Minsoto',
+        description='Log into Minsoto and complete at least one task or habit every day for 7 days.',
+        target_value=7,
+        current_value=0,
+        unit='days',
+    )
+
 
 
 @api_view(['POST'])

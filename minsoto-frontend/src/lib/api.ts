@@ -73,4 +73,78 @@ api.interceptors.response.use(
   }
 );
 
+// Simple caching layer to speed up page loads and prevent duplicate requests
+const cache = new Map();
+const pendingRequests = new Map();
+const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const originalGet = api.get;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+api.get = async function (url: string, config?: any) {
+  const key = url + JSON.stringify(config || {});
+  
+  if (cache.has(key)) {
+    const cached = cache.get(key);
+    if (Date.now() - cached.time < CACHE_TTL) {
+      return Promise.resolve(cached.data);
+    } else {
+      cache.delete(key);
+    }
+  }
+
+  if (pendingRequests.has(key)) {
+    return pendingRequests.get(key);
+  }
+
+  const promise = originalGet.call(this, url, config)
+    .then((response) => {
+      cache.set(key, { time: Date.now(), data: response });
+      pendingRequests.delete(key);
+      return response;
+    })
+    .catch((err) => {
+      pendingRequests.delete(key);
+      throw err;
+    });
+
+  pendingRequests.set(key, promise);
+  return promise;
+};
+
+// Clear cache on mutations to ensure fresh data
+const clearCache = () => cache.clear();
+
+const originalPost = api.post;
+// @ts-expect-error - overriding generic method signature
+api.post = async function (...args: any[]) {
+  clearCache();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return originalPost.apply(this, args as any);
+};
+
+const originalPut = api.put;
+// @ts-expect-error - overriding generic method signature
+api.put = async function (...args: any[]) {
+  clearCache();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return originalPut.apply(this, args as any);
+};
+
+const originalPatch = api.patch;
+// @ts-expect-error - overriding generic method signature
+api.patch = async function (...args: any[]) {
+  clearCache();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return originalPatch.apply(this, args as any);
+};
+
+const originalDelete = api.delete;
+// @ts-expect-error - overriding generic method signature
+api.delete = async function (...args: any[]) {
+  clearCache();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return originalDelete.apply(this, args as any);
+};
+
 export default api;

@@ -34,14 +34,26 @@ export default function ImageWidget({
     const [mode, setMode] = useState<'cover' | 'contain'>(config.mode || 'cover');
     const [imageError, setImageError] = useState(false);
 
+    const formatImageUrl = (inputUrl: string): string => {
+        try {
+            const urlObj = new URL(inputUrl);
+            if (urlObj.hostname === 'giphy.com' && urlObj.pathname.startsWith('/gifs/')) {
+                const match = urlObj.pathname.match(/(?:.*-)?([a-zA-Z0-9]+)$/);
+                if (match) return `https://media.giphy.com/media/${match[1]}/giphy.gif`;
+            }
+        } catch {}
+        return inputUrl;
+    };
+
     const handleSave = () => {
+        const finalUrl = formatImageUrl(url);
         // Validate URL format
-        if (url && !isValidImageUrl(url)) {
+        if (finalUrl && !isValidImageUrl(finalUrl)) {
             alert('Unsupported link. Please use a valid image URL (jpg, png, gif, webp, svg).');
             return;
         }
         setImageError(false);
-        onUpdateConfig?.(id, { ...config, url, caption, mode });
+        onUpdateConfig?.(id, { ...config, url: finalUrl, caption, mode });
         setIsEditing(false);
     };
 

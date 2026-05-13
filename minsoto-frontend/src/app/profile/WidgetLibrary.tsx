@@ -115,7 +115,7 @@ export default function WidgetLibrary({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed right-0 top-0 h-full w-80 md:w-[420px] bg-[var(--background)] border-l border-white/10 z-50 overflow-hidden flex flex-col"
+            className="fixed right-0 top-0 h-full w-80 md:w-[420px] glass-panel border-l border-white/10 z-50 overflow-hidden flex flex-col"
           >
             {/* Header */}
             <div className="p-6 border-b border-white/10 bg-white/[0.02]">

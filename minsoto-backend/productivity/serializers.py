@@ -8,19 +8,30 @@ class HabitLogSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'created_at')
 
 
+from django.utils import timezone
+
 class HabitStreakSerializer(serializers.ModelSerializer):
     recent_logs = serializers.SerializerMethodField()
+    completed_today = serializers.SerializerMethodField()
     
     class Meta:
         model = HabitStreak
         fields = ['id', 'name', 'description', 'current_streak', 'longest_streak', 'image_url',
-                  'is_public', 'frequency', 'color', 'point_value_per_completion', 'created_at', 'updated_at', 'recent_logs']
+                  'is_public', 'frequency', 'color', 'point_value_per_completion', 'created_at', 'updated_at', 'recent_logs', 'completed_today']
         read_only_fields = ('id', 'created_at', 'updated_at')
     
     def get_recent_logs(self, obj):
         # Get last 30 days of logs
         recent = obj.logs.all()[:30]
         return HabitLogSerializer(recent, many=True).data
+
+    def get_completed_today(self, obj):
+        today = timezone.now().date()
+        # Check in memory to avoid N+1 query if logs are prefetched
+        for log in obj.logs.all():
+            if log.date == today and log.completed:
+                return True
+        return False
 
 
 class TaskSerializer(serializers.ModelSerializer):

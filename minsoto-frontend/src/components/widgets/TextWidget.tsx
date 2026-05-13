@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import BaseWidget from './BaseWidget';
 import { Type, ChevronDown } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 
 interface TextWidgetProps {
     id: string;
@@ -170,9 +171,9 @@ export default function TextWidget({
                             className={`w-full h-full bg-transparent resize-none outline-none text-white/90 placeholder:text-white/30 ${fontSizeClass} ${fontWeightClass} ${textAlignClass} ${fontStyle === 'italic' ? 'italic' : ''}`}
                         />
                     ) : (
-                        <p className={`text-white/90 leading-relaxed ${fontSizeClass} ${fontWeightClass} ${textAlignClass} ${fontStyle === 'italic' ? 'italic' : ''} whitespace-pre-wrap`}>
-                            {text}
-                        </p>
+                        <div className={`text-white/90 leading-relaxed ${fontSizeClass} ${fontWeightClass} ${textAlignClass} ${fontStyle === 'italic' ? 'italic' : ''} prose prose-invert prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-li:my-0 max-w-none w-full`}>
+                            <ReactMarkdown>{text}</ReactMarkdown>
+                        </div>
                     )}
                 </div>
             </div>

@@ -167,8 +167,10 @@ export const useGuildStore = create<GuildState>((set, get) => ({
                 userRole: response.data.user_role,
                 isMember: response.data.is_member
             });
-        } catch (error) {
-            console.error('Failed to fetch guild:', error);
+        } catch (error: any) {
+            if (error.response?.status !== 404) {
+                console.error('Failed to fetch guild:', error.message || error);
+            }
             set({ currentGuild: null });
         } finally {
             set({ loading: false });
@@ -252,8 +254,10 @@ export const useGuildStore = create<GuildState>((set, get) => ({
         try {
             const response = await api.get(`/guilds/${slug}/changes/`);
             set({ changeRequests: response.data });
-        } catch (error) {
-            console.error('Failed to fetch change requests:', error);
+        } catch (error: any) {
+            if (error.response?.status !== 404) {
+                console.error('Failed to fetch change requests:', error.message || error);
+            }
         }
     },
 

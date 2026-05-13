@@ -3,7 +3,7 @@ services:
     name: minsoto-backend
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn minsoto_backend.wsgi:application
+    startCommand: gunicorn -c gunicorn.conf.py minsoto_backend.wsgi:application
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0

@@ -58,15 +58,14 @@ export default function StreakShowcaseWidget({
 
     // Sort by streak
     const sortedHabits = [...habits]
-        .filter(h => h.current_streak > 0)
-        .sort((a, b) => b.current_streak - a.current_streak);
+        .sort((a, b) => (b.current_streak || 0) - (a.current_streak || 0));
 
     // Get selected habit or default to highest streak
     const selectedHabit = selectedHabitId
         ? habits.find(h => h.id === selectedHabitId)
         : sortedHabits[0];
 
-    const style = selectedHabit ? getStreakStyle(selectedHabit.current_streak) : getStreakStyle(0);
+    const style = selectedHabit ? getStreakStyle(selectedHabit.current_streak || 0) : getStreakStyle(0);
 
     return (
         <BaseWidget
@@ -127,7 +126,7 @@ export default function StreakShowcaseWidget({
 
                         {/* Streak count */}
                         <div className={`text-4xl font-bold ${style.color} mb-1`}>
-                            {selectedHabit.current_streak}
+                            {selectedHabit.current_streak || 0}
                             <span className="text-lg font-normal text-white/40 ml-1">days</span>
                         </div>
 

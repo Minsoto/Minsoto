@@ -26,6 +26,17 @@ class Profile(models.Model):
     banner_url = models.TextField(blank=True, null=True)
     theme = models.CharField(max_length=50, default='dark')
     layout = models.JSONField(default=dict, blank=True)
+
+    # Anonymity-first identity: all personal info is opt-in (v2.0)
+    # User-set display name, separate from the Google OAuth real name
+    display_name = models.CharField(max_length=80, blank=True)
+    show_display_name = models.BooleanField(default=False)
+    show_avatar = models.BooleanField(default=False)
+    show_bio = models.BooleanField(default=False)
+    show_organization = models.BooleanField(default=False)
+    show_interests = models.BooleanField(default=False)
+    show_connections_count = models.BooleanField(default=False)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
